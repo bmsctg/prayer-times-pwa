@@ -1,0 +1,22 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+  }
+  
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  li {
+    font-size: 18px;
+    margin: 10px 0;
+  }
+  
+  button {
+    margin-top: 20px;
+    padding: 10px 16px;
+    font-size: 16px;
+  }
+  
