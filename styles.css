@@ -20,3 +20,26 @@ body {
     font-size: 16px;
   }
   
+
+  #qibla-container {
+    margin-top: 30px;
+  }
+  
+  #compass {
+    width: 200px;
+    height: 200px;
+    border: 4px solid #ccc;
+    border-radius: 50%;
+    margin: 0 auto;
+    position: relative;
+  }
+  
+  #arrow {
+    font-size: 32px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center bottom;
+    transform: translate(-50%, -100%);
+  }
+  
