@@ -95,63 +95,76 @@ let qiblaMap = null;
 
 async function showQiblaOnMap() {
   const text = document.getElementById('qibla-text');
+  const mapContainer = document.getElementById('qibla-map');
 
-  const location = await getUserLocation();
-  const bearing = calculateQiblaBearing(
-    location.lat,
-    location.lon
-  );
+  try {
+    const location = await getUserLocation();
+    const bearing = calculateQiblaBearing(
+      location.lat,
+      location.lon
+    );
 
-  text.innerHTML = `
-    Qibla direction:
-    <strong>${bearing.toFixed(1)}°</strong> from North
-  `;
+    text.innerHTML = `
+      Qibla direction:
+      <strong>${bearing.toFixed(1)}°</strong> from North
+    `;
 
-  // Initialize map once
-  if (!qiblaMap) {
-    qiblaMap = L.map('qibla-map');
-  } else {
-    qiblaMap.eachLayer(layer => qiblaMap.removeLayer(layer));
-  }
-
-  // Zoom to user
-  qiblaMap.setView([location.lat, location.lon], 4);
-
-  // Tiles
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
-  }).addTo(qiblaMap);
-
-  // User marker
-  const userMarker = L.marker([location.lat, location.lon])
-    .addTo(qiblaMap)
-    .bindPopup('You are here')
-    .openPopup();
-
-  // Kaaba marker
-  const kaabaMarker = L.marker(
-    [KAABA_LAT, KAABA_LON],
-    { icon: kaabaIcon }
-  )
-    .addTo(qiblaMap)
-    .bindPopup('Kaaba (Makkah)');
-  
-  // Qibla line
-  const qiblaLine = L.polyline(
-    [
-      [location.lat, location.lon],
-      [KAABA_LAT, KAABA_LON]
-    ],
-    {
-      color: 'green',
-      weight: 3,
-      dashArray: '6,6'
+    // Initialize map once
+    if (!qiblaMap) {
+      qiblaMap = L.map('qibla-map', {
+        zoomControl: true
+      });
+    } else {
+      qiblaMap.eachLayer(layer => qiblaMap.removeLayer(layer));
     }
-  ).addTo(qiblaMap);
 
-  qiblaMap.fitBounds(qiblaLine.getBounds(), {
-    padding: [30, 30]
-  });
+    // Tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 19
+    }).addTo(qiblaMap);
+
+    // User marker
+    const userMarker = L.marker([location.lat, location.lon])
+      .addTo(qiblaMap)
+      .bindPopup('You are here')
+      .openPopup();
+
+    // Kaaba marker
+    const kaabaMarker = L.marker(
+      [KAABA_LAT, KAABA_LON],
+      { icon: kaabaIcon }
+    )
+      .addTo(qiblaMap)
+      .bindPopup('Kaaba (Makkah)');
+    
+    // Qibla line
+    const qiblaLine = L.polyline(
+      [
+        [location.lat, location.lon],
+        [KAABA_LAT, KAABA_LON]
+      ],
+      {
+        color: 'green',
+        weight: 3,
+        dashArray: '6,6'
+      }
+    ).addTo(qiblaMap);
+
+    // Fit bounds and invalidate size to ensure map renders properly
+    qiblaMap.fitBounds(qiblaLine.getBounds(), {
+      padding: [30, 30]
+    });
+    
+    // Force map to recalculate size
+    setTimeout(() => {
+      qiblaMap.invalidateSize();
+    }, 100);
+
+  } catch (error) {
+    text.innerHTML = `Error: ${error.message || 'Could not get your location'}`;
+    console.error('Error showing Qibla map:', error);
+  }
 }
 
 document
