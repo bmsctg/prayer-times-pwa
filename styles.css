@@ -42,4 +42,46 @@ body {
     transform-origin: center bottom;
     transform: translate(-50%, -100%);
   }
+
+  /* ===== Qibla Compass ===== */
+
+#qibla-container {
+  margin-top: 30px;
+  text-align: center;
+}
+
+#compass {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 6px solid #444;
+  margin: 20px auto;
+  position: relative;
+  background: radial-gradient(circle, #f8fafc 0%, #e5e7eb 70%);
+}
+
+.dark #compass {
+  background: radial-gradient(circle, #1e293b 0%, #020617 70%);
+}
+
+.needle {
+  width: 4px;
+  height: 90px;
+  background: #dc2626;
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform-origin: bottom center;
+  transform: translateX(-50%);
+  border-radius: 2px;
+}
+
+.north {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: bold;
+}
+
   
