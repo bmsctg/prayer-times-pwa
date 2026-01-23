@@ -84,4 +84,75 @@ body {
   font-weight: bold;
 }
 
-  
+/* ===== Qibla Map ===== */
+
+#qibla-map {
+  width: 100%;
+  height: 300px;
+  margin-top: 15px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  #qibla-map {
+    height: 400px;
+  }
+}
+
+/* ===== Qibla Map Enhancements ===== */
+
+.qibla-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.qibla-controls button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  font-size: 14px;
+}
+
+#qibla-map {
+  position: relative;
+}
+
+/* Compass labels */
+.map-label {
+  position: absolute;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 2px 6px;
+  border-radius: 6px;
+  z-index: 1000;
+  font-size: 14px;
+}
+
+.map-label.north {
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.map-label.south {
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.map-label.east {
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.map-label.west {
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}

@@ -8,23 +8,34 @@
 
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
+  <link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
 
 </head>
 <body>
   <h1>Prayer Times</h1>
   <p>Stockholm, Sweden</p>
-  <h2>Qibla Direction</h2>
+  
+  <h2>Qibla Direction (Map)</h2>
 
-<button id="qibla-btn">Start Qibla Compass</button>
-
-<div id="qibla-container">
-  <div id="compass">
-    <div class="needle"></div>
-    <div class="north">N</div>
+  <div class="qibla-controls">
+    <button id="qibla-map-btn">Show Qibla</button>
+    <button id="center-map-btn">Auto Center</button>
   </div>
-
+  
+  <div id="qibla-map">
+    <div class="map-label north">N</div>
+    <div class="map-label south">S</div>
+    <div class="map-label east">E</div>
+    <div class="map-label west">W</div>
+  </div>
+  
   <p id="qibla-text"></p>
-</div>
+  
+
 
 
 
@@ -33,6 +44,7 @@
   <button id="notify-btn">Enable Notifications</button>
 
   <script src="app.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 </body>
 </html>

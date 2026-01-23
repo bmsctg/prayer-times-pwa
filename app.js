@@ -1,3 +1,11 @@
+const kaabaIcon = L.icon({
+  iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/9a/Kaaba_icon.svg',
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -36]
+});
+
+
 const prayerList = document.getElementById('prayer-times');
 const notifyBtn = document.getElementById('notify-btn');
 
@@ -83,65 +91,72 @@ function calculateQiblaBearing(lat, lon) {
   return (bearing + 360) % 360;
 }
 
-function smoothAngle(newAngle, smoothing = 0.15) {
-  if (smoothedHeading === null) return newAngle;
+let qiblaMap = null;
 
-  let diff = ((newAngle - smoothedHeading + 540) % 360) - 180;
-  return (smoothedHeading + diff * smoothing + 360) % 360;
-}
-
-function getCompassHeading(event) {
-  if (event.webkitCompassHeading !== undefined) {
-    return event.webkitCompassHeading; // iOS
-  }
-  if (event.alpha !== null) {
-    return 360 - event.alpha; // Android
-  }
-  return null;
-}
-
-async function requestMotionPermission() {
-  if (
-    typeof DeviceOrientationEvent !== 'undefined' &&
-    typeof DeviceOrientationEvent.requestPermission === 'function'
-  ) {
-    const res = await DeviceOrientationEvent.requestPermission();
-    return res === 'granted';
-  }
-  return true;
-}
-
-async function startQiblaCompass() {
-  const arrow = document.querySelector('.needle');
+async function showQiblaOnMap() {
   const text = document.getElementById('qibla-text');
 
   const location = await getUserLocation();
-  qiblaBearing = calculateQiblaBearing(location.lat, location.lon);
+  const bearing = calculateQiblaBearing(
+    location.lat,
+    location.lon
+  );
 
-  text.textContent = `Qibla: ${qiblaBearing.toFixed(1)}° from North`;
+  text.innerHTML = `
+    Qibla direction:
+    <strong>${bearing.toFixed(1)}°</strong> from North
+  `;
 
-  const motionAllowed = await requestMotionPermission();
-  if (!motionAllowed) {
-    text.textContent += ' (Compass permission denied)';
-    return;
+  // Initialize map once
+  if (!qiblaMap) {
+    qiblaMap = L.map('qibla-map');
+  } else {
+    qiblaMap.eachLayer(layer => qiblaMap.removeLayer(layer));
   }
 
-  window.addEventListener('deviceorientation', event => {
-    const heading = getCompassHeading(event);
-    if (heading === null) return;
+  // Zoom to user
+  qiblaMap.setView([location.lat, location.lon], 4);
 
-    const filtered = smoothAngle(heading);
-    smoothedHeading = filtered;
+  // Tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(qiblaMap);
 
-    const rotation = qiblaBearing - filtered;
-    arrow.style.transform =
-      `translateX(-50%) rotate(${rotation}deg)`;
+  // User marker
+  const userMarker = L.marker([location.lat, location.lon])
+    .addTo(qiblaMap)
+    .bindPopup('You are here')
+    .openPopup();
+
+  // Kaaba marker
+  const kaabaMarker = L.marker(
+    [KAABA_LAT, KAABA_LON],
+    { icon: kaabaIcon }
+  )
+    .addTo(qiblaMap)
+    .bindPopup('Kaaba (Makkah)');
+  
+  // Qibla line
+  const qiblaLine = L.polyline(
+    [
+      [location.lat, location.lon],
+      [KAABA_LAT, KAABA_LON]
+    ],
+    {
+      color: 'green',
+      weight: 3,
+      dashArray: '6,6'
+    }
+  ).addTo(qiblaMap);
+
+  qiblaMap.fitBounds(qiblaLine.getBounds(), {
+    padding: [30, 30]
   });
 }
 
 document
-  .getElementById('qibla-btn')
-  .addEventListener('click', startQiblaCompass);
+  .getElementById('qibla-map-btn')
+  .addEventListener('click', showQiblaOnMap);
 
 
   
