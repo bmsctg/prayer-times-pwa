@@ -3,6 +3,22 @@ const placeSelect = document.getElementById('place-select');
 const dateEl = document.getElementById('date-today');
 const hijriEl = document.getElementById('hijri-date');
 const qiblaEl = document.getElementById('qibla-text');
+const nextDayBtn = document.getElementById('next-day-btn');
+
+let dayOffset = 0; // 0 = today, 1 = tomorrow, ...
+
+function getDateForOffset(offset) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d;
+}
+
+function toApiDate(date) {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+}
 
 const PLACES = {
   vasterhaninge: {
@@ -68,13 +84,10 @@ function updateQiblaDisplay() {
 }
 
 async function loadHijriDate() {
-  const today = new Date();
-  const d = String(today.getDate()).padStart(2, '0');
-  const m = String(today.getMonth() + 1).padStart(2, '0');
-  const y = today.getFullYear();
-  const dateStr = `${d}-${m}-${y}`;
+  const date = getDateForOffset(dayOffset);
+  const dateStr = toApiDate(date);
 
-  dateEl.textContent = today.toLocaleDateString('en-SE', {
+  dateEl.textContent = date.toLocaleDateString('en-SE', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -99,9 +112,12 @@ async function loadHijriDate() {
 
 async function loadPrayerTimes() {
   const place = getSelectedPlace();
+  const date = getDateForOffset(dayOffset);
+  const dateStr = toApiDate(date);
+  const baseParams = `method=15&date=${dateStr}`;
   const url = place.useCoords
-    ? `https://api.aladhan.com/v1/timings?latitude=${place.lat}&longitude=${place.lon}&method=15`
-    : `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(place.city)}&country=${place.country}&method=15`;
+    ? `https://api.aladhan.com/v1/timings?latitude=${place.lat}&longitude=${place.lon}&${baseParams}`
+    : `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(place.city)}&country=${place.country}&${baseParams}`;
 
   const response = await fetch(url);
   const data = await response.json();
@@ -117,14 +133,23 @@ async function loadPrayerTimes() {
   });
 }
 
-function init() {
+function refreshDayDependent() {
   loadHijriDate();
   loadPrayerTimes();
+}
+
+function init() {
+  refreshDayDependent();
   updateQiblaDisplay();
 
   placeSelect.addEventListener('change', () => {
     loadPrayerTimes();
     updateQiblaDisplay();
+  });
+
+  nextDayBtn.addEventListener('click', () => {
+    dayOffset += 1;
+    refreshDayDependent();
   });
 }
 
