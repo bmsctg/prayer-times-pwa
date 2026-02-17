@@ -3,43 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Prayer Times – Stockholm</title>
-
+  <title>Prayer Times – Sweden</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
-  <link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
-
-
 </head>
 <body>
   <h1>Prayer Times</h1>
-  <p>Stockholm, Sweden</p>
-  
-  <h2>Qibla Direction (Map)</h2>
 
-  <div class="qibla-controls">
-    <button id="qibla-map-btn">Show Qibla</button>
-    <button id="center-map-btn">Auto Center</button>
+  <p id="date-today">—</p>
+  <p id="hijri-date" class="hijri">—</p>
+
+  <div class="place-row">
+    <label for="place-select">Place:</label>
+    <select id="place-select">
+      <option value="vasterhaninge" selected>Västerhaninge</option>
+      <option value="stockholm">Stockholm</option>
+      <option value="gothenburg">Gothenburg</option>
+    </select>
   </div>
-  
-  <div id="qibla-map"></div>
-  
-  <p id="qibla-text"></p>
-  
 
-
-
+  <p id="qibla-text" class="qibla-line"></p>
 
   <ul id="prayer-times"></ul>
 
-  <!-- <button id="notify-btn">Enable Notifications</button> -->
-
-  
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

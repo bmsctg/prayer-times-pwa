@@ -1,158 +1,52 @@
 body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    padding: 20px;
-  }
-  
-  ul {
-    list-style: none;
-    padding: 0;
-  }
-  
-  li {
-    font-size: 18px;
-    margin: 10px 0;
-  }
-  
-  button {
-    margin-top: 20px;
-    padding: 10px 16px;
-    font-size: 16px;
-  }
-  
-
-  #qibla-container {
-    margin-top: 30px;
-  }
-  
-  #compass {
-    width: 200px;
-    height: 200px;
-    border: 4px solid #ccc;
-    border-radius: 50%;
-    margin: 0 auto;
-    position: relative;
-  }
-  
-  #arrow {
-    font-size: 32px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform-origin: center bottom;
-    transform: translate(-50%, -100%);
-  }
-
-  /* ===== Qibla Compass ===== */
-
-#qibla-container {
-  margin-top: 30px;
+  font-family: Arial, sans-serif;
   text-align: center;
+  padding: 20px;
 }
 
-#compass {
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  border: 6px solid #444;
-  margin: 20px auto;
-  position: relative;
-  background: radial-gradient(circle, #f8fafc 0%, #e5e7eb 70%);
+ul {
+  list-style: none;
+  padding: 0;
 }
 
-.dark #compass {
-  background: radial-gradient(circle, #1e293b 0%, #020617 70%);
+li {
+  font-size: 18px;
+  margin: 10px 0;
 }
 
-.needle {
-  width: 4px;
-  height: 90px;
-  background: #dc2626;
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform-origin: bottom center;
-  transform: translateX(-50%);
-  border-radius: 2px;
+#date-today {
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 4px;
 }
 
-.north {
-  position: absolute;
-  top: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-weight: bold;
+.hijri {
+  font-size: 0.95rem;
+  color: #555;
+  margin-bottom: 16px;
 }
 
-/* ===== Qibla Map ===== */
-
-#qibla-map {
-  width: 100%;
-  height: 300px;
-  margin-top: 15px;
-  border-radius: 12px;
-  overflow: hidden;
+.place-row {
+  margin-bottom: 12px;
 }
 
-@media (min-width: 768px) {
-  #qibla-map {
-    height: 400px;
-  }
+.place-row label {
+  margin-right: 8px;
 }
 
-/* ===== Qibla Map Enhancements ===== */
-
-.qibla-controls {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-bottom: 10px;
-}
-
-.qibla-controls button {
+#place-select {
   padding: 8px 12px;
+  font-size: 16px;
   border-radius: 8px;
-  border: none;
-  background: #2563eb;
-  color: white;
-  font-size: 14px;
+  border: 1px solid #ccc;
 }
 
-#qibla-map {
-  position: relative;
+.qibla-line {
+  font-size: 1rem;
+  margin: 12px 0;
+  color: #333;
 }
 
-/* Compass labels */
-.map-label {
-  position: absolute;
-  font-weight: bold;
-  background: rgba(255, 255, 255, 0.8);
-  padding: 2px 6px;
-  border-radius: 6px;
-  z-index: 1000;
-  font-size: 14px;
-}
-
-.map-label.north {
-  top: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.map-label.south {
-  bottom: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.map-label.east {
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.map-label.west {
-  left: 6px;
-  top: 50%;
-  transform: translateY(-50%);
+.qibla-line strong {
+  color: #0d6efd;
 }
