@@ -135,7 +135,10 @@ async function loadPrayerTimes() {
 }
 
 function updateTodayButton() {
-  todayBtn.style.display = dayOffset === 0 ? 'none' : 'inline-block';
+  const isToday = dayOffset === 0;
+  todayBtn.disabled = isToday;
+  todayBtn.setAttribute('aria-hidden', isToday);
+  todayBtn.classList.toggle('day-btn--active', !isToday);
 }
 
 function refreshDayDependent() {
@@ -158,7 +161,9 @@ function init() {
     refreshDayDependent();
   });
 
-  todayBtn.addEventListener('click', () => {
+  todayBtn.addEventListener('click', (e) => {
+    if (dayOffset === 0) return;
+    e.preventDefault();
     dayOffset = 0;
     refreshDayDependent();
   });

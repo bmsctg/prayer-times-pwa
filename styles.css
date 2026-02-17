@@ -1,83 +1,137 @@
 body {
-  font-family: Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
   text-align: center;
-  padding: 20px;
+  padding: 24px;
+  max-width: 420px;
+  margin: 0 auto;
+  color: #1a1a1a;
+  background: #fafafa;
+}
+
+h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 16px;
+  color: #111;
 }
 
 ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 li {
-  font-size: 18px;
-  margin: 10px 0;
+  font-size: 1rem;
+  margin: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+}
+
+li:first-child {
+  border-radius: 10px 10px 0 0;
+}
+
+li:last-child {
+  border-radius: 0 0 10px 10px;
+  border-bottom: none;
+}
+
+#prayer-times {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  margin-top: 16px;
 }
 
 #date-today {
-  font-size: 1rem;
-  color: #333;
-  margin-bottom: 4px;
+  font-size: 0.95rem;
+  color: #444;
+  margin: 0 0 4px;
 }
 
 .hijri {
-  font-size: 0.95rem;
-  color: #555;
-  margin-bottom: 16px;
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0 0 20px;
 }
 
 .place-row {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .place-row label {
-  margin-right: 8px;
+  margin-right: 10px;
+  font-size: 0.95rem;
+  color: #444;
 }
 
 #place-select {
-  padding: 8px 12px;
-  font-size: 16px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  padding: 10px 14px;
+  font-size: 1rem;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  min-width: 160px;
 }
 
 .qibla-line {
-  font-size: 1rem;
-  margin: 12px 0;
-  color: #333;
+  font-size: 0.95rem;
+  margin: 0 0 20px;
+  color: #444;
 }
 
 .qibla-line strong {
   color: #0d6efd;
+  font-weight: 600;
 }
 
+/* Day navigation buttons */
 .day-buttons {
-  margin-top: 24px;
+  margin-top: 28px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
 }
 
-#today-btn,
-#next-day-btn {
-  padding: 10px 20px;
-  font-size: 16px;
-  border-radius: 8px;
-  border: 1px solid #0d6efd;
-  background: #0d6efd;
-  color: #fff;
+.day-btn {
+  padding: 12px 22px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 10px;
+  border: none;
   cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
 }
 
 #today-btn {
-  display: none;
-  background: #6c757d;
-  border-color: #6c757d;
+  background: #495057;
+  color: #fff;
 }
 
-#today-btn:hover {
-  background: #5c636a;
+#today-btn.day-btn--active {
+  background: #0d6efd;
+  color: #fff;
+}
+
+#today-btn.day-btn--active:hover {
+  background: #0b5ed7;
+}
+
+#today-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #adb5bd;
+}
+
+#next-day-btn {
+  background: #0d6efd;
+  color: #fff;
 }
 
 #next-day-btn:hover {
