@@ -4,6 +4,7 @@ const dateEl = document.getElementById('date-today');
 const hijriEl = document.getElementById('hijri-date');
 const qiblaEl = document.getElementById('qibla-text');
 const nextDayBtn = document.getElementById('next-day-btn');
+const todayBtn = document.getElementById('today-btn');
 
 let dayOffset = 0; // 0 = today, 1 = tomorrow, ...
 
@@ -133,9 +134,14 @@ async function loadPrayerTimes() {
   });
 }
 
+function updateTodayButton() {
+  todayBtn.style.display = dayOffset === 0 ? 'none' : 'inline-block';
+}
+
 function refreshDayDependent() {
   loadHijriDate();
   loadPrayerTimes();
+  updateTodayButton();
 }
 
 function init() {
@@ -151,6 +157,13 @@ function init() {
     dayOffset += 1;
     refreshDayDependent();
   });
+
+  todayBtn.addEventListener('click', () => {
+    dayOffset = 0;
+    refreshDayDependent();
+  });
+
+  updateTodayButton();
 }
 
 if ('serviceWorker' in navigator) {
