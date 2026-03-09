@@ -3,40 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1b5e3a" />
   <title>Prayer Times – Sweden</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Prayer Times</h1>
+  <header class="header">
+    <h1>Prayer Times</h1>
+    <p id="date-today" class="date-line">—</p>
+    <p id="hijri-date" class="hijri-line">—</p>
+  </header>
 
-  <p id="date-today">—</p>
-  <p id="hijri-date" class="hijri">—</p>
-
-  <div class="place-row">
-    <label for="place-select">Place:</label>
-    <select id="place-select">
+  <div class="settings-bar">
+    <select id="place-select" aria-label="Place">
       <option value="vasterhaninge" selected>Västerhaninge</option>
       <option value="stockholm">Stockholm</option>
       <option value="gothenburg">Gothenburg</option>
     </select>
-  </div>
-
-  <div class="source-row">
-    <label for="source-select">Source:</label>
-    <select id="source-select">
+    <select id="source-select" aria-label="Source">
       <option value="ifis" selected>Islamiska Förbundet</option>
       <option value="aladhan">Aladhan API</option>
     </select>
   </div>
 
-  <p id="qibla-text" class="qibla-line"></p>
-
   <ul id="prayer-times"></ul>
 
-  <div class="day-buttons">
-    <button type="button" id="today-btn" class="day-btn" disabled>Today</button>
-    <button type="button" id="next-day-btn" class="day-btn">Next day</button>
+  <div class="day-nav">
+    <button type="button" id="prev-day-btn" class="nav-btn" disabled aria-label="Previous day">&#8249;</button>
+    <button type="button" id="today-btn" class="nav-btn nav-btn--today" disabled>Today</button>
+    <button type="button" id="next-day-btn" class="nav-btn" aria-label="Next day">&#8250;</button>
+  </div>
+
+  <div class="qibla-card">
+    <p id="qibla-text" class="qibla-text"></p>
+    <a href="https://qiblafinder.withgoogle.com/" target="_blank" rel="noopener" class="qibla-btn">Open Qibla Finder</a>
   </div>
 
   <script src="app.js"></script>

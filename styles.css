@@ -1,101 +1,117 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
   text-align: center;
-  padding: 24px;
   max-width: 420px;
   margin: 0 auto;
   color: #1a1a1a;
-  background: #fafafa;
+  background: #f0f2f5;
+  min-height: 100vh;
 }
 
-h1 {
-  font-size: 1.5rem;
+/* --- Header --- */
+.header {
+  background: linear-gradient(135deg, #1b5e3a 0%, #2e7d52 100%);
+  color: #fff;
+  padding: 28px 20px 22px;
+  border-radius: 0 0 20px 20px;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  font-size: 1.4rem;
   font-weight: 700;
-  margin: 0 0 16px;
-  color: #111;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
 }
 
-ul {
+.date-line {
+  font-size: 0.92rem;
+  opacity: 0.9;
+  margin-bottom: 2px;
+}
+
+.hijri-line {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+/* --- Settings bar --- */
+.settings-bar {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+
+.settings-bar select {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #333;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 30px;
+}
+
+/* --- Prayer list --- */
+#prayer-times {
   list-style: none;
-  padding: 0;
-  margin: 0;
+  margin: 0 16px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-li {
-  font-size: 1rem;
-  margin: 0;
-  padding: 12px 16px;
-  border-bottom: 1px solid #eee;
+#prayer-times li {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 14px 18px;
   background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 1rem;
+  transition: background 0.2s;
 }
 
-li:first-child {
-  border-radius: 10px 10px 0 0;
-}
-
-li:last-child {
-  border-radius: 0 0 10px 10px;
+#prayer-times li:last-child {
   border-bottom: none;
 }
 
-#prayer-times {
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  margin-top: 16px;
+.prayer-name {
+  font-weight: 500;
+  color: #333;
 }
 
-#date-today {
-  font-size: 0.95rem;
-  color: #444;
-  margin: 0 0 4px;
+.prayer-time {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #1b5e3a;
+  font-size: 1.05rem;
 }
 
-.hijri {
-  font-size: 0.9rem;
-  color: #666;
-  margin: 0 0 20px;
+#prayer-times li.active {
+  background: #e8f5e9;
 }
 
-.place-row {
-  margin-bottom: 16px;
+#prayer-times li.active .prayer-name {
+  color: #1b5e3a;
+  font-weight: 600;
 }
 
-.place-row label {
-  margin-right: 10px;
-  font-size: 0.95rem;
-  color: #444;
-}
-
-#place-select {
-  padding: 10px 14px;
-  font-size: 1rem;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  background: #fff;
-  min-width: 160px;
-}
-
-.source-row {
-  margin-bottom: 16px;
-}
-
-.source-row label {
-  margin-right: 10px;
-  font-size: 0.95rem;
-  color: #444;
-}
-
-#source-select {
-  padding: 10px 14px;
-  font-size: 1rem;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  background: #fff;
-  min-width: 160px;
+#prayer-times li.active .prayer-time {
+  color: #1b5e3a;
 }
 
 .source-notice {
@@ -103,64 +119,87 @@ li:last-child {
   color: #856404;
   background: #fff3cd !important;
   justify-content: center !important;
-  border-radius: 0 0 10px 10px;
 }
 
-.qibla-line {
-  font-size: 0.95rem;
-  margin: 0 0 20px;
-  color: #444;
-}
-
-.qibla-line strong {
-  color: #0d6efd;
-  font-weight: 600;
-}
-
-/* Day navigation buttons */
-.day-buttons {
-  margin-top: 28px;
+/* --- Day navigation --- */
+.day-nav {
   display: flex;
-  gap: 10px;
+  align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 16px;
 }
 
-.day-btn {
-  padding: 12px 22px;
-  font-size: 0.95rem;
+.nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 1.3rem;
+  color: #333;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: #e8f5e9;
+  border-color: #1b5e3a;
+}
+
+.nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.nav-btn--today {
+  width: auto;
+  border-radius: 22px;
+  padding: 0 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.nav-btn--today:not(:disabled) {
+  background: #1b5e3a;
+  color: #fff;
+  border-color: #1b5e3a;
+}
+
+.nav-btn--today:not(:disabled):hover {
+  background: #15472e;
+}
+
+/* --- Qibla card --- */
+.qibla-card {
+  margin: 0 16px 24px;
+  padding: 16px 18px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.qibla-text {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.qibla-btn {
+  display: inline-block;
+  padding: 10px 22px;
+  font-size: 0.9rem;
   font-weight: 500;
   border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
-}
-
-#today-btn {
-  background: #495057;
+  background: #1b5e3a;
   color: #fff;
+  text-decoration: none;
+  transition: background 0.15s;
 }
 
-#today-btn.day-btn--active {
-  background: #0d6efd;
-  color: #fff;
-}
-
-#today-btn.day-btn--active:hover {
-  background: #0b5ed7;
-}
-
-#today-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #adb5bd;
-}
-
-#next-day-btn {
-  background: #0d6efd;
-  color: #fff;
-}
-
-#next-day-btn:hover {
-  background: #0b5ed7;
+.qibla-btn:hover {
+  background: #15472e;
 }
