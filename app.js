@@ -8,8 +8,12 @@ const prevDayBtn = document.getElementById('prev-day-btn');
 const nextDayBtn = document.getElementById('next-day-btn');
 const todayBtn = document.getElementById('today-btn');
 
+const notifyCheck = document.getElementById('notify-check');
+const notifyStatus = document.getElementById('notify-status');
+
 let dayOffset = 0;
 let ifisCache = null;
+let notifyTimers = [];
 
 function getDateForOffset(offset) {
   const d = new Date();
@@ -195,6 +199,11 @@ async function loadPrayerTimes() {
     notice.innerHTML = '<span>IF unavailable — showing Aladhan (MWL)</span>';
     prayerList.appendChild(notice);
   }
+
+  // Re-schedule notifications if viewing today
+  if (dayOffset === 0 && notifyCheck.checked) {
+    scheduleNotifications(timings);
+  }
 }
 
 function updateDayButtons() {
@@ -244,6 +253,95 @@ function init() {
     dayOffset = 0;
     refreshDayDependent();
   });
+
+  // Restore notification preference
+  if (localStorage.getItem('prayer-notify') === 'on') {
+    notifyCheck.checked = true;
+    handleNotifyToggle();
+  }
+  notifyCheck.addEventListener('change', handleNotifyToggle);
+}
+
+// --- Notifications ---
+function clearNotifyTimers() {
+  notifyTimers.forEach(id => clearTimeout(id));
+  notifyTimers = [];
+}
+
+function scheduleNotifications(timings) {
+  clearNotifyTimers();
+  if (!notifyCheck.checked) return;
+
+  const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+  const now = new Date();
+  let scheduled = 0;
+
+  prayers.forEach(prayer => {
+    const t = timings[prayer];
+    if (!t) return;
+    const [h, m] = t.split(':').map(Number);
+    const target = new Date(now);
+    target.setHours(h, m, 0, 0);
+    const delay = target - now;
+    if (delay > 0) {
+      const id = setTimeout(() => {
+        new Notification('Prayer Time', {
+          body: `It's time for ${prayer} (${t})`,
+          icon: 'icon-192.png',
+          tag: prayer
+        });
+      }, delay);
+      notifyTimers.push(id);
+      scheduled++;
+    }
+  });
+
+  notifyStatus.textContent = scheduled > 0
+    ? `${scheduled} notification${scheduled > 1 ? 's' : ''} scheduled`
+    : 'No upcoming prayers today';
+}
+
+async function enableNotifications() {
+  if (!('Notification' in window)) {
+    notifyStatus.textContent = 'Notifications not supported in this browser';
+    notifyCheck.checked = false;
+    return false;
+  }
+
+  let perm = Notification.permission;
+  if (perm === 'default') {
+    perm = await Notification.requestPermission();
+  }
+
+  if (perm !== 'granted') {
+    notifyStatus.textContent = 'Permission denied — enable in browser settings';
+    notifyCheck.checked = false;
+    localStorage.setItem('prayer-notify', 'off');
+    return false;
+  }
+
+  return true;
+}
+
+async function handleNotifyToggle() {
+  if (notifyCheck.checked) {
+    const ok = await enableNotifications();
+    if (!ok) return;
+    localStorage.setItem('prayer-notify', 'on');
+    // Fetch today's times and schedule
+    const place = getSelectedPlace();
+    const source = getSelectedSource();
+    let timings = null;
+    if (source === 'ifis') timings = await fetchIfis(place, toIfisDate(new Date()));
+    if (!timings) {
+      try { timings = await fetchAladhan(place, toAladhanDate(new Date())); } catch (_) {}
+    }
+    if (timings) scheduleNotifications(timings);
+  } else {
+    clearNotifyTimers();
+    localStorage.setItem('prayer-notify', 'off');
+    notifyStatus.textContent = '';
+  }
 }
 
 if ('serviceWorker' in navigator) {

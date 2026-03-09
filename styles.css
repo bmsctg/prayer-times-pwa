@@ -173,6 +173,41 @@ body {
   background: #15472e;
 }
 
+/* --- Notification card --- */
+.notify-card {
+  margin: 0 16px 12px;
+  padding: 14px 18px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.notify-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.notify-toggle input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #1b5e3a;
+  cursor: pointer;
+}
+
+.notify-label {
+  font-size: 0.92rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.notify-status {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 6px;
+}
+
 /* --- Qibla card --- */
 .qibla-card {
   margin: 0 16px 24px;
