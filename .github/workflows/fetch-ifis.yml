@@ -1,0 +1,94 @@
+name: Fetch Islamiska Förbundet prayer times
+
+on:
+  schedule:
+    # Runs daily at 2:00 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch prayer times for all cities
+        run: |
+          IFIS_URL="https://www.islamiskaforbundet.se/wp-content/plugins/bonetider/Bonetider_Widget.php"
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          REFERER="https://www.islamiskaforbundet.se/bonetider/"
+
+          # Cities to fetch: key|ifisCity
+          CITIES="Stockholm|Stockholm Göteborg|Göteborg"
+
+          # Fetch next 30 days
+          echo '{' > ifis-data.json
+          first_city=true
+
+          for entry in $CITIES; do
+            KEY=$(echo "$entry" | cut -d'|' -f1)
+            CITY=$(echo "$entry" | cut -d'|' -f2)
+
+            if [ "$first_city" = true ]; then
+              first_city=false
+            else
+              echo ',' >> ifis-data.json
+            fi
+
+            echo "  \"$KEY\": {" >> ifis-data.json
+            first_date=true
+
+            for i in $(seq 0 30); do
+              DATE=$(date -d "+${i} days" +%Y-%m-%d)
+
+              RESPONSE=$(curl -s -X POST "$IFIS_URL" \
+                -H "User-Agent: $UA" \
+                -H "Referer: $REFERER" \
+                -H "Content-Type: application/x-www-form-urlencoded" \
+                -d "ifis_bonetider_widget_city=$(printf '%s' "$CITY, SE" | jq -sRr @uri)&ifis_bonetider_widget_date=$DATE" \
+                --max-time 10 2>/dev/null || echo "")
+
+              # Extract times using grep
+              FAJR=$(echo "$RESPONSE" | grep -oP 'Fajr<span[^>]*>\K[0-9]{2}:[0-9]{2}' || echo "")
+              SHURUK=$(echo "$RESPONSE" | grep -oP 'Shuruk<span[^>]*>\K[0-9]{2}:[0-9]{2}' || echo "")
+              DHOHR=$(echo "$RESPONSE" | grep -oP 'Dhohr<span[^>]*>\K[0-9]{2}:[0-9]{2}' || echo "")
+              ASR=$(echo "$RESPONSE" | grep -oP 'Asr<span[^>]*>\K[0-9]{2}:[0-9]{2}' || echo "")
+              MAGRIB=$(echo "$RESPONSE" | grep -oP 'Magrib<span[^>]*>\K[0-9]{2}:[0-9]{2}' || echo "")
+              ISHA=$(echo "$RESPONSE" | grep -oP 'Isha<span[^>]*>\K[0-9]{2}:[0-9]{2}' || echo "")
+
+              if [ -n "$FAJR" ]; then
+                if [ "$first_date" = true ]; then
+                  first_date=false
+                else
+                  echo ',' >> ifis-data.json
+                fi
+                echo "    \"$DATE\": {\"Fajr\":\"$FAJR\",\"Sunrise\":\"$SHURUK\",\"Dhuhr\":\"$DHOHR\",\"Asr\":\"$ASR\",\"Maghrib\":\"$MAGRIB\",\"Isha\":\"$ISHA\"}" >> ifis-data.json
+              fi
+
+              # Small delay to be respectful
+              sleep 1
+            done
+
+            echo '' >> ifis-data.json
+            echo '  }' >> ifis-data.json
+          done
+
+          echo '}' >> ifis-data.json
+
+          echo "Generated ifis-data.json:"
+          cat ifis-data.json | head -20
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ifis-data.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update IF prayer times data"
+            git push
+          fi

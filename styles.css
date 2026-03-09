@@ -79,6 +79,33 @@ li:last-child {
   min-width: 160px;
 }
 
+.source-row {
+  margin-bottom: 16px;
+}
+
+.source-row label {
+  margin-right: 10px;
+  font-size: 0.95rem;
+  color: #444;
+}
+
+#source-select {
+  padding: 10px 14px;
+  font-size: 1rem;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  min-width: 160px;
+}
+
+.source-notice {
+  font-size: 0.8rem;
+  color: #856404;
+  background: #fff3cd !important;
+  justify-content: center !important;
+  border-radius: 0 0 10px 10px;
+}
+
 .qibla-line {
   font-size: 0.95rem;
   margin: 0 0 20px;
