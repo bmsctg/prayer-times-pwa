@@ -17,14 +17,22 @@
 
   <div class="settings-bar">
     <select id="place-select" aria-label="Place">
-      <option value="vasterhaninge" selected>Västerhaninge</option>
-      <option value="stockholm">Stockholm</option>
+      <option value="stockholm" selected>Stockholm</option>
       <option value="gothenburg">Gothenburg</option>
     </select>
     <select id="source-select" aria-label="Source">
       <option value="ifis" selected>Islamiska Förbundet</option>
       <option value="aladhan">Aladhan API</option>
     </select>
+  </div>
+
+  <div id="next-prayer-banner" class="next-prayer-banner" style="display:none">
+    <span class="banner-label">Next Prayer</span>
+    <div class="banner-body">
+      <span id="banner-prayer-name" class="banner-name">—</span>
+      <span id="banner-prayer-at" class="banner-at"></span>
+    </div>
+    <div id="banner-countdown" class="banner-countdown">—</div>
   </div>
 
   <ul id="prayer-times"></ul>
@@ -47,6 +55,10 @@
     <p id="qibla-text" class="qibla-text"></p>
     <a href="https://qiblafinder.withgoogle.com/" target="_blank" rel="noopener" class="qibla-btn">Open Qibla Finder</a>
   </div>
+
+  <footer class="copyright">
+    &copy; 2026 BMS. All rights reserved.
+  </footer>
 
   <script src="app.js"></script>
 </body>

@@ -13,7 +13,10 @@ const notifyStatus = document.getElementById('notify-status');
 
 let dayOffset = 0;
 let ifisCache = null;
-let notifyTimers = [];
+let notifyInterval = null;
+let bannerInterval = null;
+let todayTimings = null;
+let notifiedKeys = {}; // tracks which prayers have been notified, keyed by "Prayer-YYYY-MM-DD"
 
 function getDateForOffset(offset) {
   const d = new Date();
@@ -165,6 +168,7 @@ async function loadPrayerTimes() {
   const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
   prayerList.innerHTML = '<li><span class="prayer-name">Loading…</span></li>';
+  if (dayOffset !== 0) clearBanner();
 
   let timings = null;
   let usedSource = source;
@@ -200,7 +204,8 @@ async function loadPrayerTimes() {
     prayerList.appendChild(notice);
   }
 
-  // Re-schedule notifications if viewing today
+  // Banner always shown for today; notifications if opted in
+  startNextPrayerBanner(timings);
   if (dayOffset === 0 && notifyCheck.checked) {
     scheduleNotifications(timings);
   }
@@ -262,43 +267,132 @@ function init() {
   notifyCheck.addEventListener('change', handleNotifyToggle);
 }
 
-// --- Notifications ---
-function clearNotifyTimers() {
-  notifyTimers.forEach(id => clearTimeout(id));
-  notifyTimers = [];
+// --- Next Prayer Banner ---
+function clearBanner() {
+  if (bannerInterval) {
+    clearInterval(bannerInterval);
+    bannerInterval = null;
+  }
+  document.getElementById('next-prayer-banner').style.display = 'none';
 }
 
-function scheduleNotifications(timings) {
-  clearNotifyTimers();
-  if (!notifyCheck.checked) return;
+function startNextPrayerBanner(timings) {
+  clearBanner();
+  if (dayOffset !== 0) return;
+
+  const banner = document.getElementById('next-prayer-banner');
+  const nameEl = document.getElementById('banner-prayer-name');
+  const atEl = document.getElementById('banner-prayer-at');
+  const countdownEl = document.getElementById('banner-countdown');
+  const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
+  function tick() {
+    const now = new Date();
+    let next = null;
+
+    for (const prayer of prayers) {
+      const t = timings[prayer];
+      if (!t) continue;
+      const [h, m] = t.split(':').map(Number);
+      const target = new Date(now);
+      target.setHours(h, m, 0, 0);
+      const diff = target - now;
+      if (diff > 0 && (next === null || diff < next.diff)) {
+        next = { name: prayer, time: t, diff };
+      }
+    }
+
+    if (!next) {
+      clearBanner();
+      return;
+    }
+
+    banner.style.display = '';
+    nameEl.textContent = next.name;
+    atEl.textContent = `at ${next.time}`;
+
+    const totalSecs = Math.floor(next.diff / 1000);
+    const hours = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+
+    let text = 'in ';
+    if (hours > 0 && mins > 0) {
+      text += `${hours} hr ${mins} min`;
+    } else if (hours > 0) {
+      text += `${hours} hr`;
+    } else if (mins > 0) {
+      text += `${mins} min ${String(secs).padStart(2, '0')} sec`;
+    } else {
+      text += `${secs} sec`;
+    }
+
+    countdownEl.textContent = text;
+  }
+
+  tick();
+  bannerInterval = setInterval(tick, 1000);
+}
+
+// --- Notifications ---
+function clearNotifyTimers() {
+  if (notifyInterval) {
+    clearInterval(notifyInterval);
+    notifyInterval = null;
+  }
+}
+
+function checkAndNotify() {
+  if (!todayTimings || !notifyCheck.checked) return;
 
   const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
   const now = new Date();
-  let scheduled = 0;
+  const todayStr = toIfisDate(now);
+  const nowH = now.getHours();
+  const nowM = now.getMinutes();
 
   prayers.forEach(prayer => {
-    const t = timings[prayer];
+    const t = todayTimings[prayer];
     if (!t) return;
     const [h, m] = t.split(':').map(Number);
-    const target = new Date(now);
-    target.setHours(h, m, 0, 0);
-    const delay = target - now;
-    if (delay > 0) {
-      const id = setTimeout(() => {
-        new Notification('Prayer Time', {
-          body: `It's time for ${prayer} (${t})`,
-          icon: 'icon-192.png',
-          tag: prayer
-        });
-      }, delay);
-      notifyTimers.push(id);
-      scheduled++;
+    const key = `${prayer}-${todayStr}`;
+    if (h === nowH && m === nowM && !notifiedKeys[key]) {
+      notifiedKeys[key] = true;
+      new Notification('Prayer Time', {
+        body: `It's time for ${prayer} (${t})`,
+        icon: 'icon-192.png',
+        tag: prayer
+      });
     }
   });
+}
 
-  notifyStatus.textContent = scheduled > 0
-    ? `${scheduled} notification${scheduled > 1 ? 's' : ''} scheduled`
+function updateNotifyStatus() {
+  if (!todayTimings) return;
+  const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const todayStr = toIfisDate(now);
+  const upcoming = prayers.filter(p => {
+    const t = todayTimings[p];
+    if (!t) return false;
+    const [h, m] = t.split(':').map(Number);
+    const key = `${p}-${todayStr}`;
+    return (h * 60 + m) >= nowMins && !notifiedKeys[key];
+  }).length;
+  notifyStatus.textContent = upcoming > 0
+    ? `Active — watching ${upcoming} upcoming prayer${upcoming > 1 ? 's' : ''}`
     : 'No upcoming prayers today';
+}
+
+function scheduleNotifications(timings) {
+  todayTimings = timings;
+  clearNotifyTimers();
+  if (!notifyCheck.checked) return;
+  // Poll every 30s and check if current H:M matches any prayer time
+  notifyInterval = setInterval(checkAndNotify, 30000);
+  checkAndNotify(); // check immediately in case it's exactly prayer time now
+  updateNotifyStatus();
 }
 
 async function enableNotifications() {
@@ -339,6 +433,7 @@ async function handleNotifyToggle() {
     if (timings) scheduleNotifications(timings);
   } else {
     clearNotifyTimers();
+    todayTimings = null;
     localStorage.setItem('prayer-notify', 'off');
     notifyStatus.textContent = '';
   }
