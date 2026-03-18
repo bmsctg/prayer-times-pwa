@@ -335,6 +335,56 @@ function startNextPrayerBanner(timings) {
 }
 
 // --- Notifications ---
+const PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
+function swTriggersSupported() {
+  return 'serviceWorker' in navigator && typeof TimestampTrigger !== 'undefined';
+}
+
+// Schedule notifications via Service Worker TimestampTrigger.
+// Fires even when the page is closed or backgrounded.
+async function scheduleViaSW(timings) {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const now = new Date();
+    let count = 0;
+    for (const prayer of PRAYERS) {
+      const t = timings[prayer];
+      if (!t) continue;
+      const [h, m] = t.split(':').map(Number);
+      const target = new Date(now);
+      target.setHours(h, m, 0, 0);
+      if (target <= now) continue;
+      // Same tag replaces any previously scheduled notification for this prayer
+      await reg.showNotification('Prayer Time', {
+        body: `It's time for ${prayer} — ${t}`,
+        icon: 'icon-192.png',
+        tag: `prayer-${prayer}`,
+        showTrigger: new TimestampTrigger(target.getTime()),
+        renotify: false
+      });
+      count++;
+    }
+    return count;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Cancel any SW-scheduled prayer notifications
+async function clearSWNotifications() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    for (const prayer of PRAYERS) {
+      const notes = await reg.getNotifications({ tag: `prayer-${prayer}` });
+      notes.forEach(n => n.close());
+    }
+  } catch (_) {}
+}
+
+// Fallback: poll every 30s when SW triggers aren't available.
+// Only reliable while the page is open.
 function clearNotifyTimers() {
   if (notifyInterval) {
     clearInterval(notifyInterval);
@@ -344,14 +394,11 @@ function clearNotifyTimers() {
 
 function checkAndNotify() {
   if (!todayTimings || !notifyCheck.checked) return;
-
-  const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
   const now = new Date();
   const todayStr = toIfisDate(now);
   const nowH = now.getHours();
   const nowM = now.getMinutes();
-
-  prayers.forEach(prayer => {
+  PRAYERS.forEach(prayer => {
     const t = todayTimings[prayer];
     if (!t) return;
     const [h, m] = t.split(':').map(Number);
@@ -359,7 +406,7 @@ function checkAndNotify() {
     if (h === nowH && m === nowM && !notifiedKeys[key]) {
       notifiedKeys[key] = true;
       new Notification('Prayer Time', {
-        body: `It's time for ${prayer} (${t})`,
+        body: `It's time for ${prayer} — ${t}`,
         icon: 'icon-192.png',
         tag: prayer
       });
@@ -367,32 +414,39 @@ function checkAndNotify() {
   });
 }
 
-function updateNotifyStatus() {
-  if (!todayTimings) return;
-  const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+function countUpcoming(timings) {
   const now = new Date();
   const nowMins = now.getHours() * 60 + now.getMinutes();
-  const todayStr = toIfisDate(now);
-  const upcoming = prayers.filter(p => {
-    const t = todayTimings[p];
+  return PRAYERS.filter(p => {
+    const t = timings[p];
     if (!t) return false;
     const [h, m] = t.split(':').map(Number);
-    const key = `${p}-${todayStr}`;
-    return (h * 60 + m) >= nowMins && !notifiedKeys[key];
+    return (h * 60 + m) > nowMins;
   }).length;
-  notifyStatus.textContent = upcoming > 0
-    ? `Active — watching ${upcoming} upcoming prayer${upcoming > 1 ? 's' : ''}`
-    : 'No upcoming prayers today';
 }
 
-function scheduleNotifications(timings) {
+async function scheduleNotifications(timings) {
   todayTimings = timings;
   clearNotifyTimers();
   if (!notifyCheck.checked) return;
-  // Poll every 30s and check if current H:M matches any prayer time
+
+  if (swTriggersSupported()) {
+    const count = await scheduleViaSW(timings);
+    if (count !== null) {
+      notifyStatus.textContent = count > 0
+        ? `${count} prayer${count > 1 ? 's' : ''} scheduled — works even when page is closed`
+        : 'No upcoming prayers today';
+      return;
+    }
+  }
+
+  // Fallback: polling (page must stay open)
   notifyInterval = setInterval(checkAndNotify, 30000);
-  checkAndNotify(); // check immediately in case it's exactly prayer time now
-  updateNotifyStatus();
+  checkAndNotify();
+  const upcoming = countUpcoming(timings);
+  notifyStatus.textContent = upcoming > 0
+    ? `Active — ${upcoming} upcoming prayer${upcoming > 1 ? 's' : ''} (keep page open)`
+    : 'No upcoming prayers today';
 }
 
 async function enableNotifications() {
@@ -433,6 +487,7 @@ async function handleNotifyToggle() {
     if (timings) scheduleNotifications(timings);
   } else {
     clearNotifyTimers();
+    clearSWNotifications();
     todayTimings = null;
     localStorage.setItem('prayer-notify', 'off');
     notifyStatus.textContent = '';
