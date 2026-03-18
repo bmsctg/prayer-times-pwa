@@ -276,62 +276,86 @@ function clearBanner() {
   document.getElementById('next-prayer-banner').style.display = 'none';
 }
 
-function startNextPrayerBanner(timings) {
+async function startNextPrayerBanner(todayTimings) {
   clearBanner();
   if (dayOffset !== 0) return;
 
-  const banner = document.getElementById('next-prayer-banner');
-  const nameEl = document.getElementById('banner-prayer-name');
-  const atEl = document.getElementById('banner-prayer-at');
+  const banner    = document.getElementById('next-prayer-banner');
+  const labelEl   = document.getElementById('banner-label');
+  const nameEl    = document.getElementById('banner-prayer-name');
+  const atEl      = document.getElementById('banner-prayer-at');
   const countdownEl = document.getElementById('banner-countdown');
-  const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+  const prayersList = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
-  function tick() {
-    const now = new Date();
+  function formatCountdown(diff) {
+    const totalSecs = Math.floor(diff / 1000);
+    const hours = Math.floor(totalSecs / 3600);
+    const mins  = Math.floor((totalSecs % 3600) / 60);
+    const secs  = totalSecs % 60;
+    if (hours > 0 && mins > 0) return `in ${hours} hr ${mins} min`;
+    if (hours > 0)             return `in ${hours} hr`;
+    if (mins  > 0)             return `in ${mins} min ${String(secs).padStart(2, '0')} sec`;
+    return `in ${secs} sec`;
+  }
+
+  function findNextFromTimings(timings, baseDate) {
     let next = null;
-
-    for (const prayer of prayers) {
+    for (const prayer of prayersList) {
       const t = timings[prayer];
       if (!t) continue;
       const [h, m] = t.split(':').map(Number);
-      const target = new Date(now);
+      const target = new Date(baseDate);
       target.setHours(h, m, 0, 0);
-      const diff = target - now;
+      const diff = target - Date.now();
       if (diff > 0 && (next === null || diff < next.diff)) {
-        next = { name: prayer, time: t, diff };
+        next = { name: prayer, time: t, target, diff };
       }
     }
-
-    if (!next) {
-      clearBanner();
-      return;
-    }
-
-    banner.style.display = '';
-    nameEl.textContent = next.name;
-    atEl.textContent = `at ${next.time}`;
-
-    const totalSecs = Math.floor(next.diff / 1000);
-    const hours = Math.floor(totalSecs / 3600);
-    const mins = Math.floor((totalSecs % 3600) / 60);
-    const secs = totalSecs % 60;
-
-    let text = 'in ';
-    if (hours > 0 && mins > 0) {
-      text += `${hours} hr ${mins} min`;
-    } else if (hours > 0) {
-      text += `${hours} hr`;
-    } else if (mins > 0) {
-      text += `${mins} min ${String(secs).padStart(2, '0')} sec`;
-    } else {
-      text += `${secs} sec`;
-    }
-
-    countdownEl.textContent = text;
+    return next;
   }
 
-  tick();
-  bannerInterval = setInterval(tick, 1000);
+  function startTicking(next, label) {
+    banner.style.display = '';
+    labelEl.textContent  = label;
+    nameEl.textContent   = next.name;
+    atEl.textContent     = `at ${next.time}`;
+    countdownEl.textContent = formatCountdown(next.target - Date.now());
+
+    bannerInterval = setInterval(() => {
+      const diff = next.target - Date.now();
+      if (diff <= 0) {
+        // This prayer just started — restart banner to pick next one
+        startNextPrayerBanner(todayTimings);
+        return;
+      }
+      countdownEl.textContent = formatCountdown(diff);
+    }, 1000);
+  }
+
+  // 1. Try today's timings
+  const todayNext = findNextFromTimings(todayTimings, new Date());
+  if (todayNext) {
+    startTicking(todayNext, 'Next Prayer');
+    return;
+  }
+
+  // 2. All prayers done for today — fetch tomorrow's and show the first one
+  const place  = getSelectedPlace();
+  const source = getSelectedSource();
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  let tomorrowTimings = null;
+  if (source === 'ifis') tomorrowTimings = await fetchIfis(place, toIfisDate(tomorrow));
+  if (!tomorrowTimings) {
+    try { tomorrowTimings = await fetchAladhan(place, toAladhanDate(tomorrow)); } catch (_) {}
+  }
+  if (!tomorrowTimings) return;
+
+  const tomorrowNext = findNextFromTimings(tomorrowTimings, tomorrow);
+  if (tomorrowNext) {
+    startTicking(tomorrowNext, "Tomorrow's First Prayer");
+  }
 }
 
 // --- Notifications ---
