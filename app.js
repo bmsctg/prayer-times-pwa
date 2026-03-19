@@ -452,25 +452,28 @@ function countUpcoming(timings) {
 async function scheduleNotifications(timings) {
   todayTimings = timings;
   clearNotifyTimers();
+  notifyStatus.className = 'notify-status';
   if (!notifyCheck.checked) return;
+
+  const upcoming = countUpcoming(timings);
+  if (upcoming === 0) {
+    notifyStatus.textContent = 'No upcoming prayers today';
+    return;
+  }
 
   if (swTriggersSupported()) {
     const count = await scheduleViaSW(timings);
     if (count !== null) {
-      notifyStatus.textContent = count > 0
-        ? `${count} prayer${count > 1 ? 's' : ''} scheduled — works even when page is closed`
-        : 'No upcoming prayers today';
+      notifyStatus.textContent = `${count} prayer${count > 1 ? 's' : ''} scheduled for today`;
       return;
     }
   }
 
-  // Fallback: polling (page must stay open)
+  // Fallback: polling while page is open
   notifyInterval = setInterval(checkAndNotify, 30000);
   checkAndNotify();
-  const upcoming = countUpcoming(timings);
-  notifyStatus.textContent = upcoming > 0
-    ? `Active — ${upcoming} upcoming prayer${upcoming > 1 ? 's' : ''} (keep page open)`
-    : 'No upcoming prayers today';
+  notifyStatus.textContent = `${upcoming} prayer${upcoming > 1 ? 's' : ''} scheduled for today`;
+  notifyStatus.className = 'notify-status notify-status--warn';
 }
 
 async function enableNotifications() {
