@@ -1,0 +1,7 @@
+{
+  "name": "fetch-ifis-scripts",
+  "private": true,
+  "dependencies": {
+    "puppeteer": "^22"
+  }
+}

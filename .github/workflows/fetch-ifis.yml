@@ -14,84 +14,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: .github/scripts
+
       - name: Fetch prayer times for all cities
-        run: |
-          node -e "
-          const https = require('https');
-          const fs = require('fs');
-
-          const CITIES = ['Stockholm', 'Göteborg'];
-          const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-
-          function fetchDay(city, dateStr) {
-            return new Promise((resolve, reject) => {
-              const body = 'ifis_bonetider_widget_city=' + encodeURIComponent(city + ', SE') + '&ifis_bonetider_widget_date=' + dateStr;
-              const req = https.request({
-                hostname: 'www.islamiskaforbundet.se',
-                path: '/wp-content/plugins/bonetider/Bonetider_Widget.php',
-                method: 'POST',
-                headers: {
-                  'User-Agent': UA,
-                  'Referer': 'https://www.islamiskaforbundet.se/bonetider/',
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                  'Content-Length': Buffer.byteLength(body)
-                }
-              }, res => {
-                let data = '';
-                res.on('data', c => data += c);
-                res.on('end', () => resolve(data));
-              });
-              req.on('error', reject);
-              req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
-              req.write(body);
-              req.end();
-            });
-          }
-
-          let debugPrinted = false;
-          function parseHtml(html) {
-            const map = { Fajr:'Fajr', Shuruk:'Sunrise', Dhohr:'Dhuhr', Asr:'Asr', Magrib:'Maghrib', Isha:'Isha' };
-            const times = {};
-            const re = /<li>(\w+)<span[^>]*>(\d{2}:\d{2})<\/span><\/li>/g;
-            let m;
-            while ((m = re.exec(html)) !== null) {
-              if (map[m[1]]) times[map[m[1]]] = m[2];
-            }
-            if (Object.keys(times).length !== 6 && !debugPrinted) {
-              debugPrinted = true;
-              console.log('DEBUG raw response (first 1000 chars):', html.slice(0, 1000));
-            }
-            return Object.keys(times).length === 6 ? times : null;
-          }
-
-          async function run() {
-            const result = {};
-            for (const city of CITIES) {
-              result[city] = {};
-              for (let i = 0; i <= 30; i++) {
-                const d = new Date();
-                d.setDate(d.getDate() + i);
-                const ds = d.toISOString().slice(0,10);
-                try {
-                  const html = await fetchDay(city, ds);
-                  const times = parseHtml(html);
-                  if (times) {
-                    result[city][ds] = times;
-                    console.log(city + ' ' + ds + ': OK');
-                  } else {
-                    console.log(city + ' ' + ds + ': FAILED');
-                  }
-                } catch(e) {
-                  console.log(city + ' ' + ds + ': ERROR ' + e.message);
-                }
-                await new Promise(r => setTimeout(r, 2000));
-              }
-            }
-            fs.writeFileSync('ifis-data.json', JSON.stringify(result, null, 2));
-            console.log('Generated ifis-data.json');
-          }
-          run();
-          "
+        run: node .github/scripts/fetch-ifis.js
 
       - name: Commit updated data
         run: |
