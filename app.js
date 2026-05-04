@@ -1,3 +1,9 @@
+// ── Push notification config ──────────────────────────────────────────────────
+// After deploying the Cloudflare Worker, replace both values below.
+const WORKER_URL    = 'https://REPLACE_WITH_YOUR_WORKER_URL';
+const VAPID_PUBLIC_KEY = 'REPLACE_WITH_YOUR_PUBLIC_VAPID_KEY';
+// ─────────────────────────────────────────────────────────────────────────────
+
 const prayerList = document.getElementById('prayer-times');
 const placeSelect = document.getElementById('place-select');
 const sourceSelect = document.getElementById('source-select');
@@ -117,8 +123,13 @@ function getNextPrayerIndex(timings, prayers) {
 async function fetchIfis(place, dateStr) {
   if (!ifisCache) {
     try {
-      const res = await fetch('ifis-data.json');
-      if (res.ok) ifisCache = await res.json();
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await fetch(`ifis-data.json?v=${today}`);
+      if (res.ok) {
+        const data = await res.json();
+        const hasData = Object.values(data).some(c => Object.keys(c).length > 0);
+        if (hasData) ifisCache = data;
+      }
     } catch (_) {
       return null;
     }
@@ -358,6 +369,71 @@ async function startNextPrayerBanner(todayTimings) {
   }
 }
 
+// --- Web Push (Cloudflare Worker) ---
+
+function pushConfigured() {
+  return !WORKER_URL.includes('REPLACE') && !VAPID_PUBLIC_KEY.includes('REPLACE');
+}
+
+function urlBase64ToUint8Array(base64) {
+  const pad = '='.repeat((4 - base64.length % 4) % 4);
+  const b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  return new Uint8Array([...atob(b64)].map(c => c.charCodeAt(0)));
+}
+
+async function subscribeToPush(timings) {
+  if (!pushConfigured()) return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+
+    // Build array of upcoming prayer timestamps (UTC ms) for today
+    const now = new Date();
+    const prayers = PRAYERS.map(name => {
+      const t = timings[name];
+      if (!t) return null;
+      const [h, m] = t.split(':').map(Number);
+      const target = new Date(now);
+      target.setHours(h, m, 0, 0);
+      if (target <= now) return null;
+      return { name, time: t, ts: target.getTime() };
+    }).filter(Boolean);
+
+    await fetch(`${WORKER_URL}/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription, prayers, city: getSelectedPlace().name }),
+    });
+  } catch (e) {
+    console.warn('Push subscription failed:', e);
+  }
+}
+
+async function unsubscribeFromPush() {
+  if (!pushConfigured()) return;
+  if (!('serviceWorker' in navigator)) return;
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const subscription = await reg.pushManager.getSubscription();
+    if (!subscription) return;
+
+    await fetch(`${WORKER_URL}/unsubscribe`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: subscription.endpoint }),
+    });
+    await subscription.unsubscribe();
+  } catch (e) {
+    console.warn('Push unsubscribe failed:', e);
+  }
+}
+
 // --- Notifications ---
 const PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
@@ -461,6 +537,10 @@ async function scheduleNotifications(timings) {
     return;
   }
 
+  // Best-effort: register with push server so notifications work when page is closed.
+  // Runs silently in the background — doesn't block or affect the UI.
+  subscribeToPush(timings);
+
   if (swTriggersSupported()) {
     const count = await scheduleViaSW(timings);
     if (count !== null) {
@@ -515,6 +595,7 @@ async function handleNotifyToggle() {
   } else {
     clearNotifyTimers();
     clearSWNotifications();
+    unsubscribeFromPush();
     todayTimings = null;
     localStorage.setItem('prayer-notify', 'off');
     notifyStatus.textContent = '';
