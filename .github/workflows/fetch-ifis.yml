@@ -48,6 +48,7 @@ jobs:
             });
           }
 
+          let debugPrinted = false;
           function parseHtml(html) {
             const map = { Fajr:'Fajr', Shuruk:'Sunrise', Dhohr:'Dhuhr', Asr:'Asr', Magrib:'Maghrib', Isha:'Isha' };
             const times = {};
@@ -55,6 +56,10 @@ jobs:
             let m;
             while ((m = re.exec(html)) !== null) {
               if (map[m[1]]) times[map[m[1]]] = m[2];
+            }
+            if (Object.keys(times).length !== 6 && !debugPrinted) {
+              debugPrinted = true;
+              console.log('DEBUG raw response (first 1000 chars):', html.slice(0, 1000));
             }
             return Object.keys(times).length === 6 ? times : null;
           }
