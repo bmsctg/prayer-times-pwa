@@ -71,6 +71,15 @@ const PLACES = {
     lon: 11.9746,
     useCoords: false,
     ifisCity: 'Göteborg'
+  },
+  vasteras: {
+    name: 'Västerås',
+    city: 'Västerås',
+    country: 'Sweden',
+    lat: 59.6099,
+    lon: 16.5448,
+    useCoords: true,
+    ifisCity: 'Stockholm'
   }
 };
 
@@ -212,6 +221,13 @@ async function loadPrayerTimes() {
     const notice = document.createElement('li');
     notice.className = 'source-notice';
     notice.innerHTML = '<span>IF unavailable — showing Aladhan (MWL)</span>';
+    prayerList.appendChild(notice);
+  }
+
+  if (source === 'ifis' && usedSource === 'ifis' && place.useCoords) {
+    const notice = document.createElement('li');
+    notice.className = 'source-notice';
+    notice.innerHTML = `<span>IFIS times are for ${place.ifisCity} — no local data for ${place.name}</span>`;
     prayerList.appendChild(notice);
   }
 
