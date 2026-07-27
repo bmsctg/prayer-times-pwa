@@ -170,14 +170,123 @@ function getSelectedSource() {
   return sourceSelect.value || 'ifis';
 }
 
+// Live Magnetometer Device Compass State
+let currentCompassHeading = null;
+let isSensorActive = false;
+let lastVibeTime = 0;
+
+const compassDial = document.getElementById('compass-dial');
+const alignmentBadge = document.getElementById('alignment-badge');
+const compassSensorBtn = document.getElementById('compass-sensor-btn');
+const sensorBtnText = document.getElementById('sensor-btn-text');
+const compassSensorStatus = document.getElementById('compass-sensor-status');
+
+function getCardinalDirection(angle) {
+  const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  return directions[Math.round(angle / 45) % 8];
+}
+
 function updateQiblaDisplay() {
   const place = getSelectedPlace();
   const bearing = calculateQiblaBearing(place.lat, place.lon);
-  const bearingFormatted = `${bearing.toFixed(1)}°`;
-  
+  const bearingFormatted = `${bearing.toFixed(1)}° ${getCardinalDirection(bearing)}`;
+
   if (qiblaDegreesEl) qiblaDegreesEl.textContent = bearingFormatted;
-  if (qiblaTextEl) qiblaTextEl.textContent = `Qibla is ${bearingFormatted} from North (${place.name})`;
-  if (compassNeedle) compassNeedle.style.transform = `rotate(${bearing.toFixed(1)}deg)`;
+
+  if (isSensorActive && currentCompassHeading !== null) {
+    // Relative needle rotation: points toward Mecca as the user rotates the device
+    let relativeAngle = (bearing - currentCompassHeading + 360) % 360;
+    if (compassNeedle) compassNeedle.style.transform = `rotate(${relativeAngle.toFixed(1)}deg)`;
+
+    // Check alignment threshold (within ±4 degrees)
+    const diff = Math.abs(relativeAngle > 180 ? 360 - relativeAngle : relativeAngle);
+    const isAligned = diff <= 4;
+
+    if (isAligned) {
+      if (compassDial) compassDial.classList.add('aligned');
+      if (alignmentBadge) alignmentBadge.style.display = 'block';
+      if (qiblaTextEl) qiblaTextEl.textContent = `🎯 PERFECT ALIGNMENT! Facing Mecca (${bearingFormatted})`;
+      if (compassSensorStatus) compassSensorStatus.textContent = `Heading: ${currentCompassHeading.toFixed(0)}° • Hold steady`;
+
+      const now = Date.now();
+      if (now - lastVibeTime > 2000 && 'vibrate' in navigator) {
+        lastVibeTime = now;
+        try { navigator.vibrate([40, 60, 40]); } catch (_) {}
+      }
+    } else {
+      if (compassDial) compassDial.classList.remove('aligned');
+      if (alignmentBadge) alignmentBadge.style.display = 'none';
+      if (qiblaTextEl) qiblaTextEl.textContent = `Target Qibla: ${bearingFormatted} (${place.name})`;
+      if (compassSensorStatus) compassSensorStatus.textContent = `Rotate phone to align needle with 🕋 Kaaba (Device Heading: ${currentCompassHeading.toFixed(0)}°)`;
+    }
+  } else {
+    // Static mode relative to North
+    if (compassDial) compassDial.classList.remove('aligned');
+    if (alignmentBadge) alignmentBadge.style.display = 'none';
+    if (qiblaTextEl) qiblaTextEl.textContent = `Qibla direction: ${bearingFormatted} from North (${place.name})`;
+    if (compassNeedle) compassNeedle.style.transform = `rotate(${bearing.toFixed(1)}deg)`;
+    if (compassSensorStatus) compassSensorStatus.textContent = 'Tap button below to turn your phone into a live real-time compass';
+  }
+}
+
+// Live Magnetometer Orientation Listener
+function handleDeviceOrientation(event) {
+  let heading = null;
+
+  // iOS Safari compass heading
+  if (typeof event.webkitCompassHeading !== 'undefined' && event.webkitCompassHeading !== null) {
+    heading = event.webkitCompassHeading;
+  } else if (event.alpha !== null && typeof event.alpha !== 'undefined') {
+    // Android device orientation absolute
+    heading = (360 - event.alpha) % 360;
+  }
+
+  if (heading !== null && !isNaN(heading)) {
+    currentCompassHeading = heading;
+    updateQiblaDisplay();
+  }
+}
+
+async function toggleLiveCompassSensor() {
+  if (isSensorActive) {
+    // Turn off
+    window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+    window.removeEventListener('deviceorientation', handleDeviceOrientation, true);
+    isSensorActive = false;
+    currentCompassHeading = null;
+    if (compassSensorBtn) compassSensorBtn.classList.remove('active');
+    if (sensorBtnText) sensorBtnText.textContent = 'Enable Live Device Compass';
+    updateQiblaDisplay();
+    return;
+  }
+
+  // Request iOS permission if required
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const response = await DeviceOrientationEvent.requestPermission();
+      if (response !== 'granted') {
+        alert('Compass permission denied. Please allow motion sensor access in your browser settings.');
+        return;
+      }
+    } catch (err) {
+      console.warn('Orientation permission error:', err);
+    }
+  }
+
+  // Register listeners
+  if ('ondeviceorientationabsolute' in window) {
+    window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+  } else if ('ondeviceorientation' in window) {
+    window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+  } else {
+    alert('Device orientation sensors are not supported on this browser/device.');
+    return;
+  }
+
+  isSensorActive = true;
+  if (compassSensorBtn) compassSensorBtn.classList.add('active');
+  if (sensorBtnText) sensorBtnText.textContent = 'Disable Live Sensor';
+  updateQiblaDisplay();
 }
 
 // Play Notification Chime Sound
@@ -769,6 +878,7 @@ function init() {
 
   notifyCheck.addEventListener('change', handleNotifyToggle);
   testNotifyBtn.addEventListener('click', triggerTestNotification);
+  if (compassSensorBtn) compassSensorBtn.addEventListener('click', toggleLiveCompassSensor);
 }
 
 // Service Worker Registration
