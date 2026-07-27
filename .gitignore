@@ -1,0 +1,6 @@
+# Dependencies & Editor files
+node_modules/
+.claude/
+.DS_Store
+*.log
+worker/test-*.js

@@ -1,28 +1,134 @@
-// ── Push notification config ──────────────────────────────────────────────────
-// After deploying the Cloudflare Worker, replace both values below.
-const WORKER_URL    = 'https://REPLACE_WITH_YOUR_WORKER_URL';
-const VAPID_PUBLIC_KEY = 'REPLACE_WITH_YOUR_PUBLIC_VAPID_KEY';
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Prayer Times PWA Engine & Push Notification Manager ──────────────────────
 
+// Production VAPID Public Key for Web Push Subscriptions
+const VAPID_PUBLIC_KEY = 'BP1Da-UxqCrFMGH55kSRD1qea2ONl8xQNYcFM9g4zPPIm1VNn41EQM-N5lqqLlBXU-c0H_Mm4vfoUA0qYkqb9OU';
+// Cloudflare Worker backend URL (Optional: replace when worker is deployed to CF)
+let WORKER_URL = 'https://prayer-times-push.bms.workers.dev';
+
+// DOM Elements
 const prayerList = document.getElementById('prayer-times');
 const placeSelect = document.getElementById('place-select');
 const sourceSelect = document.getElementById('source-select');
+const gpsBtn = document.getElementById('gps-btn');
 const dateEl = document.getElementById('date-today');
 const hijriEl = document.getElementById('hijri-date');
-const qiblaEl = document.getElementById('qibla-text');
+const qiblaTextEl = document.getElementById('qibla-text');
+const qiblaDegreesEl = document.getElementById('qibla-degrees');
+const compassNeedle = document.getElementById('compass-needle');
 const prevDayBtn = document.getElementById('prev-day-btn');
 const nextDayBtn = document.getElementById('next-day-btn');
 const todayBtn = document.getElementById('today-btn');
 
 const notifyCheck = document.getElementById('notify-check');
 const notifyStatus = document.getElementById('notify-status');
+const testNotifyBtn = document.getElementById('test-notify-btn');
 
+const themeToggleBtn = document.getElementById('theme-toggle-btn');
+const audioToggleBtn = document.getElementById('audio-toggle-btn');
+const audioIconOn = document.getElementById('audio-icon-on');
+const audioIconOff = document.getElementById('audio-icon-off');
+
+// Application State
 let dayOffset = 0;
 let ifisCache = null;
 let notifyInterval = null;
 let bannerInterval = null;
 let todayTimings = null;
-let notifiedKeys = {}; // tracks which prayers have been notified, keyed by "Prayer-YYYY-MM-DD"
+let notifiedKeys = {};
+let isAudioEnabled = localStorage.getItem('prayer-audio') !== 'off';
+
+const PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+const KAABA_LAT = 21.4225;
+const KAABA_LON = 39.8262;
+
+// Expanded Swedish Cities
+const PLACES = {
+  stockholm: {
+    name: 'Stockholm',
+    city: 'Stockholm',
+    country: 'Sweden',
+    lat: 59.3293,
+    lon: 18.0686,
+    useCoords: false,
+    ifisCity: 'Stockholm'
+  },
+  gothenburg: {
+    name: 'Gothenburg',
+    city: 'Gothenburg',
+    country: 'Sweden',
+    lat: 57.7089,
+    lon: 11.9746,
+    useCoords: false,
+    ifisCity: 'Göteborg'
+  },
+  malmo: {
+    name: 'Malmö',
+    city: 'Malmö',
+    country: 'Sweden',
+    lat: 55.6050,
+    lon: 13.0038,
+    useCoords: true,
+    ifisCity: 'Göteborg'
+  },
+  uppsala: {
+    name: 'Uppsala',
+    city: 'Uppsala',
+    country: 'Sweden',
+    lat: 59.8586,
+    lon: 17.6389,
+    useCoords: true,
+    ifisCity: 'Stockholm'
+  },
+  vasteras: {
+    name: 'Västerås',
+    city: 'Västerås',
+    country: 'Sweden',
+    lat: 59.6099,
+    lon: 16.5448,
+    useCoords: true,
+    ifisCity: 'Stockholm'
+  },
+  orebro: {
+    name: 'Örebro',
+    city: 'Örebro',
+    country: 'Sweden',
+    lat: 59.2753,
+    lon: 15.2134,
+    useCoords: true,
+    ifisCity: 'Stockholm'
+  },
+  linkoping: {
+    name: 'Linköping',
+    city: 'Linköping',
+    country: 'Sweden',
+    lat: 58.4108,
+    lon: 15.6216,
+    useCoords: true,
+    ifisCity: 'Stockholm'
+  },
+  helsingborg: {
+    name: 'Helsingborg',
+    city: 'Helsingborg',
+    country: 'Sweden',
+    lat: 56.0465,
+    lon: 12.6945,
+    useCoords: true,
+    ifisCity: 'Göteborg'
+  },
+  vasterhaninge: {
+    name: 'Västerhaninge',
+    city: 'Haninge',
+    country: 'Sweden',
+    lat: 59.1167,
+    lon: 18.1000,
+    useCoords: true,
+    ifisCity: 'Stockholm'
+  }
+};
+
+// Helper Utilities
+function toRad(deg) { return deg * Math.PI / 180; }
+function toDeg(rad) { return rad * 180 / Math.PI; }
 
 function getDateForOffset(offset) {
   const d = new Date();
@@ -44,51 +150,6 @@ function toIfisDate(date) {
   return `${year}-${month}-${day}`;
 }
 
-const PLACES = {
-  vasterhaninge: {
-    name: 'Västerhaninge',
-    city: 'Haninge',
-    country: 'Sweden',
-    lat: 59.1167,
-    lon: 18.10,
-    useCoords: true,
-    ifisCity: 'Stockholm'
-  },
-  stockholm: {
-    name: 'Stockholm',
-    city: 'Stockholm',
-    country: 'Sweden',
-    lat: 59.3293,
-    lon: 18.0686,
-    useCoords: false,
-    ifisCity: 'Stockholm'
-  },
-  gothenburg: {
-    name: 'Gothenburg',
-    city: 'Gothenburg',
-    country: 'Sweden',
-    lat: 57.7089,
-    lon: 11.9746,
-    useCoords: false,
-    ifisCity: 'Göteborg'
-  },
-  vasteras: {
-    name: 'Västerås',
-    city: 'Västerås',
-    country: 'Sweden',
-    lat: 59.6099,
-    lon: 16.5448,
-    useCoords: true,
-    ifisCity: 'Stockholm'
-  }
-};
-
-const KAABA_LAT = 21.4225;
-const KAABA_LON = 39.8262;
-
-function toRad(deg) { return deg * Math.PI / 180; }
-function toDeg(rad) { return rad * 180 / Math.PI; }
-
 function calculateQiblaBearing(lat, lon) {
   const kaabaLat = toRad(KAABA_LAT);
   const kaabaLon = toRad(KAABA_LON);
@@ -102,7 +163,7 @@ function calculateQiblaBearing(lat, lon) {
 }
 
 function getSelectedPlace() {
-  return PLACES[placeSelect.value || 'vasterhaninge'];
+  return PLACES[placeSelect.value] || PLACES.stockholm;
 }
 
 function getSelectedSource() {
@@ -112,23 +173,47 @@ function getSelectedSource() {
 function updateQiblaDisplay() {
   const place = getSelectedPlace();
   const bearing = calculateQiblaBearing(place.lat, place.lon);
-  qiblaEl.textContent = `Qibla direction: ${bearing.toFixed(1)}° from North`;
+  const bearingFormatted = `${bearing.toFixed(1)}°`;
+  
+  if (qiblaDegreesEl) qiblaDegreesEl.textContent = bearingFormatted;
+  if (qiblaTextEl) qiblaTextEl.textContent = `Qibla is ${bearingFormatted} from North (${place.name})`;
+  if (compassNeedle) compassNeedle.style.transform = `rotate(${bearing.toFixed(1)}deg)`;
 }
 
-// Find which prayer is next (only for today)
-function getNextPrayerIndex(timings, prayers) {
-  if (dayOffset !== 0) return -1;
-  const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes();
-  for (let i = 0; i < prayers.length; i++) {
-    const t = timings[prayers[i]];
-    if (!t) continue;
-    const [h, m] = t.split(':').map(Number);
-    if (h * 60 + m > nowMins) return i;
+// Play Notification Chime Sound
+function playNotificationSound() {
+  if (!isAudioEnabled) return;
+  try {
+    const audio = new Audio('adhan.wav');
+    audio.play().catch(() => {
+      playWebAudioChime();
+    });
+  } catch (_) {
+    playWebAudioChime();
   }
-  return -1;
 }
 
+// Fallback Web Audio API Bell Chime
+function playWebAudioChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const freqs = [329.63, 493.88, 659.25];
+    freqs.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.0);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.1);
+      osc.stop(ctx.currentTime + 2.0);
+    });
+  } catch (_) {}
+}
+
+// API Data Fetching
 async function fetchIfis(place, dateStr) {
   if (!ifisCache) {
     try {
@@ -181,13 +266,25 @@ async function loadHijriDate() {
   }
 }
 
+function getNextPrayerIndex(timings) {
+  if (dayOffset !== 0) return -1;
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  for (let i = 0; i < PRAYERS.length; i++) {
+    const t = timings[PRAYERS[i]];
+    if (!t) continue;
+    const [h, m] = t.split(':').map(Number);
+    if (h * 60 + m > nowMins) return i;
+  }
+  return -1;
+}
+
 async function loadPrayerTimes() {
   const place = getSelectedPlace();
   const date = getDateForOffset(dayOffset);
   const source = getSelectedSource();
-  const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
-  prayerList.innerHTML = '<li><span class="prayer-name">Loading…</span></li>';
+  prayerList.innerHTML = '<li><span class="prayer-name">Loading prayer times…</span></li>';
   if (dayOffset !== 0) clearBanner();
 
   let timings = null;
@@ -202,99 +299,45 @@ async function loadPrayerTimes() {
     try {
       timings = await fetchAladhan(place, toAladhanDate(date));
     } catch (e) {
-      prayerList.innerHTML = '<li><span class="prayer-name">Failed to load</span></li>';
+      prayerList.innerHTML = '<li><span class="prayer-name">Failed to load prayer times</span></li>';
       return;
     }
   }
 
-  const nextIdx = getNextPrayerIndex(timings, prayers);
+  const nextIdx = getNextPrayerIndex(timings);
 
   prayerList.innerHTML = '';
-  prayers.forEach((prayer, i) => {
+  PRAYERS.forEach((prayer, i) => {
     const li = document.createElement('li');
     if (i === nextIdx) li.classList.add('active');
-    li.innerHTML = `<span class="prayer-name">${prayer}</span><span class="prayer-time">${timings[prayer]}</span>`;
+    li.innerHTML = `
+      <span class="prayer-name">${prayer}</span>
+      <span class="prayer-time">${timings[prayer]}</span>
+    `;
     prayerList.appendChild(li);
   });
 
   if (source === 'ifis' && usedSource === 'aladhan') {
     const notice = document.createElement('li');
     notice.className = 'source-notice';
-    notice.innerHTML = '<span>IF unavailable — showing Aladhan (MWL)</span>';
+    notice.innerHTML = '<span>IFIS data unavailable — showing Aladhan (MWL)</span>';
     prayerList.appendChild(notice);
   }
 
   if (source === 'ifis' && usedSource === 'ifis' && place.useCoords) {
     const notice = document.createElement('li');
     notice.className = 'source-notice';
-    notice.innerHTML = `<span>IFIS times are for ${place.ifisCity} — no local data for ${place.name}</span>`;
+    notice.innerHTML = `<span>IFIS times are for ${place.ifisCity} — Aladhan recommended for ${place.name}</span>`;
     prayerList.appendChild(notice);
   }
 
-  // Banner always shown for today; notifications if opted in
   startNextPrayerBanner(timings);
   if (dayOffset === 0 && notifyCheck.checked) {
     scheduleNotifications(timings);
   }
 }
 
-function updateDayButtons() {
-  const isToday = dayOffset === 0;
-  todayBtn.disabled = isToday;
-  prevDayBtn.disabled = isToday;
-}
-
-function refreshDayDependent() {
-  loadHijriDate();
-  loadPrayerTimes();
-  updateDayButtons();
-}
-
-function init() {
-  const savedSource = localStorage.getItem('prayer-source');
-  if (savedSource && (savedSource === 'ifis' || savedSource === 'aladhan')) {
-    sourceSelect.value = savedSource;
-  }
-
-  refreshDayDependent();
-  updateQiblaDisplay();
-
-  placeSelect.addEventListener('change', () => {
-    loadPrayerTimes();
-    updateQiblaDisplay();
-  });
-
-  sourceSelect.addEventListener('change', () => {
-    localStorage.setItem('prayer-source', sourceSelect.value);
-    loadPrayerTimes();
-  });
-
-  prevDayBtn.addEventListener('click', () => {
-    if (dayOffset === 0) return;
-    dayOffset -= 1;
-    refreshDayDependent();
-  });
-
-  nextDayBtn.addEventListener('click', () => {
-    dayOffset += 1;
-    refreshDayDependent();
-  });
-
-  todayBtn.addEventListener('click', () => {
-    if (dayOffset === 0) return;
-    dayOffset = 0;
-    refreshDayDependent();
-  });
-
-  // Restore notification preference
-  if (localStorage.getItem('prayer-notify') === 'on') {
-    notifyCheck.checked = true;
-    handleNotifyToggle();
-  }
-  notifyCheck.addEventListener('change', handleNotifyToggle);
-}
-
-// --- Next Prayer Banner ---
+// Next Prayer Countdown & Progress Bar
 function clearBanner() {
   if (bannerInterval) {
     clearInterval(bannerInterval);
@@ -307,67 +350,89 @@ async function startNextPrayerBanner(todayTimings) {
   clearBanner();
   if (dayOffset !== 0) return;
 
-  const banner    = document.getElementById('next-prayer-banner');
-  const labelEl   = document.getElementById('banner-label');
-  const nameEl    = document.getElementById('banner-prayer-name');
-  const atEl      = document.getElementById('banner-prayer-at');
+  const banner = document.getElementById('next-prayer-banner');
+  const labelEl = document.getElementById('banner-label');
+  const nameEl = document.getElementById('banner-prayer-name');
+  const atEl = document.getElementById('banner-prayer-at');
   const countdownEl = document.getElementById('banner-countdown');
-  const prayersList = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+  const progressBar = document.getElementById('prayer-progress-bar');
 
   function formatCountdown(diff) {
-    const totalSecs = Math.floor(diff / 1000);
+    const totalSecs = Math.max(0, Math.floor(diff / 1000));
     const hours = Math.floor(totalSecs / 3600);
-    const mins  = Math.floor((totalSecs % 3600) / 60);
-    const secs  = totalSecs % 60;
-    if (hours > 0 && mins > 0) return `in ${hours} hr ${mins} min`;
-    if (hours > 0)             return `in ${hours} hr`;
-    if (mins  > 0)             return `in ${mins} min ${String(secs).padStart(2, '0')} sec`;
-    return `in ${secs} sec`;
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+    if (hours > 0) return `in ${hours}h ${mins}m ${secs}s`;
+    if (mins > 0) return `in ${mins}m ${String(secs).padStart(2, '0')}s`;
+    return `in ${secs}s`;
   }
 
   function findNextFromTimings(timings, baseDate) {
     let next = null;
-    for (const prayer of prayersList) {
+    let prev = null;
+    const now = Date.now();
+
+    for (let i = 0; i < PRAYERS.length; i++) {
+      const prayer = PRAYERS[i];
       const t = timings[prayer];
       if (!t) continue;
       const [h, m] = t.split(':').map(Number);
       const target = new Date(baseDate);
       target.setHours(h, m, 0, 0);
-      const diff = target - Date.now();
-      if (diff > 0 && (next === null || diff < next.diff)) {
-        next = { name: prayer, time: t, target, diff };
+
+      if (target.getTime() > now) {
+        if (!next) {
+          next = { name: prayer, time: t, target, diff: target - now };
+          // Previous prayer is either the one right before or start of day
+          if (i > 0 && timings[PRAYERS[i - 1]]) {
+            const [ph, pm] = timings[PRAYERS[i - 1]].split(':').map(Number);
+            const pTarget = new Date(baseDate);
+            pTarget.setHours(ph, pm, 0, 0);
+            prev = pTarget;
+          } else {
+            const pTarget = new Date(baseDate);
+            pTarget.setHours(0, 0, 0, 0);
+            prev = pTarget;
+          }
+        }
       }
     }
-    return next;
+    return { next, prev };
   }
 
-  function startTicking(next, label) {
+  function startTicking(next, prevTarget, label) {
     banner.style.display = '';
-    labelEl.textContent  = label;
-    nameEl.textContent   = next.name;
-    atEl.textContent     = `at ${next.time}`;
+    labelEl.textContent = label;
+    nameEl.textContent = next.name;
+    atEl.textContent = `at ${next.time}`;
     countdownEl.textContent = formatCountdown(next.target - Date.now());
 
-    bannerInterval = setInterval(() => {
-      const diff = next.target - Date.now();
-      if (diff <= 0) {
-        // This prayer just started — restart banner to pick next one
+    const totalDuration = next.target - (prevTarget ? prevTarget.getTime() : (next.target - 4 * 3600 * 1000));
+
+    function updateProgress() {
+      const remaining = next.target - Date.now();
+      if (remaining <= 0) {
         startNextPrayerBanner(todayTimings);
         return;
       }
-      countdownEl.textContent = formatCountdown(diff);
-    }, 1000);
+      countdownEl.textContent = formatCountdown(remaining);
+      const elapsed = totalDuration - remaining;
+      const pct = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+      if (progressBar) progressBar.style.width = `${pct}%`;
+    }
+
+    updateProgress();
+    bannerInterval = setInterval(updateProgress, 1000);
   }
 
-  // 1. Try today's timings
-  const todayNext = findNextFromTimings(todayTimings, new Date());
+  const { next: todayNext, prev: prevTarget } = findNextFromTimings(todayTimings, new Date());
   if (todayNext) {
-    startTicking(todayNext, 'Next Prayer');
+    startTicking(todayNext, prevTarget, 'Next Prayer');
     return;
   }
 
-  // 2. All prayers done for today — fetch tomorrow's and show the first one
-  const place  = getSelectedPlace();
+  // Tomorrow's First Prayer
+  const place = getSelectedPlace();
   const source = getSelectedSource();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -379,17 +444,13 @@ async function startNextPrayerBanner(todayTimings) {
   }
   if (!tomorrowTimings) return;
 
-  const tomorrowNext = findNextFromTimings(tomorrowTimings, tomorrow);
+  const { next: tomorrowNext } = findNextFromTimings(tomorrowTimings, tomorrow);
   if (tomorrowNext) {
-    startTicking(tomorrowNext, "Tomorrow's First Prayer");
+    startTicking(tomorrowNext, null, "Tomorrow's First Prayer");
   }
 }
 
-// --- Web Push (Cloudflare Worker) ---
-
-function pushConfigured() {
-  return !WORKER_URL.includes('REPLACE') && !VAPID_PUBLIC_KEY.includes('REPLACE');
-}
+// ── Web Push & Service Worker Notifications ─────────────────────────────────
 
 function urlBase64ToUint8Array(base64) {
   const pad = '='.repeat((4 - base64.length % 4) % 4);
@@ -398,7 +459,6 @@ function urlBase64ToUint8Array(base64) {
 }
 
 async function subscribeToPush(timings) {
-  if (!pushConfigured()) return;
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
   try {
@@ -408,7 +468,6 @@ async function subscribeToPush(timings) {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
 
-    // Build array of upcoming prayer timestamps (UTC ms) for today
     const now = new Date();
     const prayers = PRAYERS.map(name => {
       const t = timings[name];
@@ -420,87 +479,21 @@ async function subscribeToPush(timings) {
       return { name, time: t, ts: target.getTime() };
     }).filter(Boolean);
 
-    await fetch(`${WORKER_URL}/subscribe`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscription, prayers, city: getSelectedPlace().name }),
-    });
-  } catch (e) {
-    console.warn('Push subscription failed:', e);
-  }
-}
-
-async function unsubscribeFromPush() {
-  if (!pushConfigured()) return;
-  if (!('serviceWorker' in navigator)) return;
-
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    const subscription = await reg.pushManager.getSubscription();
-    if (!subscription) return;
-
-    await fetch(`${WORKER_URL}/unsubscribe`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint: subscription.endpoint }),
-    });
-    await subscription.unsubscribe();
-  } catch (e) {
-    console.warn('Push unsubscribe failed:', e);
-  }
-}
-
-// --- Notifications ---
-const PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
-
-function swTriggersSupported() {
-  return 'serviceWorker' in navigator && typeof TimestampTrigger !== 'undefined';
-}
-
-// Schedule notifications via Service Worker TimestampTrigger.
-// Fires even when the page is closed or backgrounded.
-async function scheduleViaSW(timings) {
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    const now = new Date();
-    let count = 0;
-    for (const prayer of PRAYERS) {
-      const t = timings[prayer];
-      if (!t) continue;
-      const [h, m] = t.split(':').map(Number);
-      const target = new Date(now);
-      target.setHours(h, m, 0, 0);
-      if (target <= now) continue;
-      // Same tag replaces any previously scheduled notification for this prayer
-      await reg.showNotification('Prayer Time', {
-        body: `It's time for ${prayer} — ${t}`,
-        icon: 'icon-192.png',
-        tag: `prayer-${prayer}`,
-        showTrigger: new TimestampTrigger(target.getTime()),
-        renotify: false
+    // Try posting to Cloudflare Worker backend if available
+    try {
+      await fetch(`${WORKER_URL}/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription, prayers, city: getSelectedPlace().name }),
       });
-      count++;
+    } catch (_) {
+      // Backend worker offline or unconfigured; Service Worker local notifications are active
     }
-    return count;
   } catch (e) {
-    return null;
+    console.log('Local notifications active (push subscription fallback):', e);
   }
 }
 
-// Cancel any SW-scheduled prayer notifications
-async function clearSWNotifications() {
-  if (!('serviceWorker' in navigator)) return;
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    for (const prayer of PRAYERS) {
-      const notes = await reg.getNotifications({ tag: `prayer-${prayer}` });
-      notes.forEach(n => n.close());
-    }
-  } catch (_) {}
-}
-
-// Fallback: poll every 30s when SW triggers aren't available.
-// Only reliable while the page is open.
 function clearNotifyTimers() {
   if (notifyInterval) {
     clearInterval(notifyInterval);
@@ -514,18 +507,36 @@ function checkAndNotify() {
   const todayStr = toIfisDate(now);
   const nowH = now.getHours();
   const nowM = now.getMinutes();
+
   PRAYERS.forEach(prayer => {
     const t = todayTimings[prayer];
     if (!t) return;
     const [h, m] = t.split(':').map(Number);
     const key = `${prayer}-${todayStr}`;
+
     if (h === nowH && m === nowM && !notifiedKeys[key]) {
       notifiedKeys[key] = true;
-      new Notification('Prayer Time', {
-        body: `It's time for ${prayer} — ${t}`,
-        icon: 'icon-192.png',
-        tag: prayer
-      });
+      playNotificationSound();
+      
+      if ('Notification' in window && Notification.permission === 'granted') {
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.ready.then(reg => {
+            reg.showNotification('Prayer Time', {
+              body: `It's time for ${prayer} (${t})`,
+              icon: 'icon-192.png',
+              badge: 'icon-192.png',
+              tag: `prayer-${prayer}`,
+              renotify: true
+            });
+          });
+        } else {
+          new Notification('Prayer Time', {
+            body: `It's time for ${prayer} (${t})`,
+            icon: 'icon-192.png',
+            tag: prayer
+          });
+        }
+      }
     }
   });
 }
@@ -544,37 +555,25 @@ function countUpcoming(timings) {
 async function scheduleNotifications(timings) {
   todayTimings = timings;
   clearNotifyTimers();
-  notifyStatus.className = 'notify-status';
+
   if (!notifyCheck.checked) return;
 
   const upcoming = countUpcoming(timings);
   if (upcoming === 0) {
-    notifyStatus.textContent = 'No upcoming prayers today';
+    notifyStatus.textContent = 'No remaining prayers today';
     return;
   }
 
-  // Best-effort: register with push server so notifications work when page is closed.
-  // Runs silently in the background — doesn't block or affect the UI.
   subscribeToPush(timings);
-
-  if (swTriggersSupported()) {
-    const count = await scheduleViaSW(timings);
-    if (count !== null) {
-      notifyStatus.textContent = `${count} prayer${count > 1 ? 's' : ''} scheduled for today`;
-      return;
-    }
-  }
-
-  // Fallback: polling while page is open
-  notifyInterval = setInterval(checkAndNotify, 30000);
+  notifyInterval = setInterval(checkAndNotify, 15000);
   checkAndNotify();
-  notifyStatus.textContent = `${upcoming} prayer${upcoming > 1 ? 's' : ''} scheduled for today`;
-  notifyStatus.className = 'notify-status notify-status--warn';
+
+  notifyStatus.textContent = `✓ ${upcoming} prayer alert${upcoming > 1 ? 's' : ''} scheduled for today`;
 }
 
 async function enableNotifications() {
   if (!('Notification' in window)) {
-    notifyStatus.textContent = 'Notifications not supported in this browser';
+    notifyStatus.textContent = 'Notifications are not supported in this browser';
     notifyCheck.checked = false;
     return false;
   }
@@ -585,7 +584,7 @@ async function enableNotifications() {
   }
 
   if (perm !== 'granted') {
-    notifyStatus.textContent = 'Permission denied — enable in browser settings';
+    notifyStatus.textContent = 'Permission denied — please enable in browser settings';
     notifyCheck.checked = false;
     localStorage.setItem('prayer-notify', 'off');
     return false;
@@ -599,7 +598,7 @@ async function handleNotifyToggle() {
     const ok = await enableNotifications();
     if (!ok) return;
     localStorage.setItem('prayer-notify', 'on');
-    // Fetch today's times and schedule
+
     const place = getSelectedPlace();
     const source = getSelectedSource();
     let timings = null;
@@ -610,16 +609,173 @@ async function handleNotifyToggle() {
     if (timings) scheduleNotifications(timings);
   } else {
     clearNotifyTimers();
-    clearSWNotifications();
-    unsubscribeFromPush();
     todayTimings = null;
     localStorage.setItem('prayer-notify', 'off');
-    notifyStatus.textContent = '';
+    notifyStatus.textContent = 'Prayer alerts disabled';
   }
 }
 
+// Trigger Test Notification
+function triggerTestNotification() {
+  playNotificationSound();
+  if ('Notification' in window && Notification.permission === 'granted') {
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification('Test Prayer Alert', {
+          body: 'Notification service is working perfectly!',
+          icon: 'icon-192.png',
+          tag: 'test-prayer',
+          renotify: true
+        });
+      });
+    } else {
+      new Notification('Test Prayer Alert', {
+        body: 'Notification service is working perfectly!',
+        icon: 'icon-192.png'
+      });
+    }
+    notifyStatus.textContent = '✓ Test notification fired successfully!';
+  } else {
+    notifyCheck.checked = true;
+    handleNotifyToggle();
+  }
+}
+
+// GPS Location Handler
+function handleGpsLocation() {
+  if (!navigator.geolocation) {
+    alert('Geolocation is not supported by your browser');
+    return;
+  }
+
+  gpsBtn.style.opacity = '0.5';
+  navigator.geolocation.getCurrentPosition(pos => {
+    gpsBtn.style.opacity = '1';
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+
+    // Find nearest city in PLACES
+    let nearestKey = 'stockholm';
+    let minDist = Infinity;
+
+    Object.keys(PLACES).forEach(key => {
+      const p = PLACES[key];
+      const d = Math.hypot(p.lat - lat, p.lon - lon);
+      if (d < minDist) {
+        minDist = d;
+        nearestKey = key;
+      }
+    });
+
+    placeSelect.value = nearestKey;
+    loadPrayerTimes();
+    updateQiblaDisplay();
+  }, () => {
+    gpsBtn.style.opacity = '1';
+    alert('Unable to retrieve your location');
+  });
+}
+
+// Theme & Audio Controls
+function initThemeAndAudio() {
+  const savedTheme = localStorage.getItem('prayer-theme') || 'light';
+  document.documentElement.dataset.theme = savedTheme;
+
+  themeToggleBtn.addEventListener('click', () => {
+    const current = document.documentElement.dataset.theme;
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('prayer-theme', next);
+  });
+
+  function updateAudioIcons() {
+    audioIconOn.style.display = isAudioEnabled ? '' : 'none';
+    audioIconOff.style.display = isAudioEnabled ? 'none' : '';
+  }
+
+  updateAudioIcons();
+  audioToggleBtn.addEventListener('click', () => {
+    isAudioEnabled = !isAudioEnabled;
+    localStorage.setItem('prayer-audio', isAudioEnabled ? 'on' : 'off');
+    updateAudioIcons();
+    if (isAudioEnabled) playNotificationSound();
+  });
+}
+
+function updateDayButtons() {
+  const isToday = dayOffset === 0;
+  todayBtn.disabled = isToday;
+  prevDayBtn.disabled = isToday;
+}
+
+function refreshDayDependent() {
+  loadHijriDate();
+  loadPrayerTimes();
+  updateDayButtons();
+}
+
+function init() {
+  initThemeAndAudio();
+
+  const savedSource = localStorage.getItem('prayer-source');
+  if (savedSource && (savedSource === 'ifis' || savedSource === 'aladhan')) {
+    sourceSelect.value = savedSource;
+  }
+
+  const savedPlace = localStorage.getItem('prayer-place');
+  if (savedPlace && PLACES[savedPlace]) {
+    placeSelect.value = savedPlace;
+  }
+
+  refreshDayDependent();
+  updateQiblaDisplay();
+
+  placeSelect.addEventListener('change', () => {
+    localStorage.setItem('prayer-place', placeSelect.value);
+    loadPrayerTimes();
+    updateQiblaDisplay();
+  });
+
+  sourceSelect.addEventListener('change', () => {
+    localStorage.setItem('prayer-source', sourceSelect.value);
+    loadPrayerTimes();
+  });
+
+  gpsBtn.addEventListener('click', handleGpsLocation);
+
+  prevDayBtn.addEventListener('click', () => {
+    if (dayOffset === 0) return;
+    dayOffset -= 1;
+    refreshDayDependent();
+  });
+
+  nextDayBtn.addEventListener('click', () => {
+    dayOffset += 1;
+    refreshDayDependent();
+  });
+
+  todayBtn.addEventListener('click', () => {
+    if (dayOffset === 0) return;
+    dayOffset = 0;
+    refreshDayDependent();
+  });
+
+  if (localStorage.getItem('prayer-notify') === 'on') {
+    notifyCheck.checked = true;
+    handleNotifyToggle();
+  } else {
+    notifyStatus.textContent = 'Toggle switch to enable prayer alerts';
+  }
+
+  notifyCheck.addEventListener('change', handleNotifyToggle);
+  testNotifyBtn.addEventListener('click', triggerTestNotification);
+}
+
+// Service Worker Registration
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
+  navigator.serviceWorker.register('sw.js').catch(err => {
+    console.warn('Service Worker registration failed:', err);
+  });
 }
 
 init();

@@ -1,0 +1,21 @@
+name = "prayer-times-push"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# KV namespace — create with: wrangler kv:namespace create SUBSCRIPTIONS
+# Then replace the id below with the one provided by wrangler
+[[kv_namespaces]]
+binding = "SUBSCRIPTIONS"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+[vars]
+VAPID_SUBJECT = "mailto:admin@prayertimes.app"
+VAPID_PUBLIC_KEY = "BP1Da-UxqCrFMGH55kSRD1qea2ONl8xQNYcFM9g4zPPIm1VNn41EQM-N5lqqLlBXU-c0H_Mm4vfoUA0qYkqb9OU"
+
+# Set private key secret via command:
+# npx wrangler secret put VAPID_PRIVATE_KEY
+# Value: C_ocxxq6bet4AI9Vo8qwdRCww4Tov2HNL5QeSI9zrOc
+
+# Cron: fires every minute to check and dispatch prayer notifications
+[[triggers]]
+crons = ["* * * * *"]
