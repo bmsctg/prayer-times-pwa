@@ -677,7 +677,95 @@ async function scheduleNotifications(timings) {
   notifyInterval = setInterval(checkAndNotify, 15000);
   checkAndNotify();
 
-  notifyStatus.textContent = `✓ ${upcoming} prayer alert${upcoming > 1 ? 's' : ''} scheduled for today`;
+  notifyStatus.textContent = `✓ ${upcoming} prayer alert${upcoming > 1 ? 's' : ''} active today. (Use 'Add 30-Day Alarms' below for 100% lock-screen alarms on mobile)`;
+}
+
+// ── 30-Day Phone System Calendar (.ics) Alarm Generator ───────────────────
+async function generateIcsCalendarAlarms() {
+  const syncBtn = document.getElementById('sync-calendar-btn');
+  const calStatus = document.getElementById('cal-status');
+  const place = getSelectedPlace();
+  const source = getSelectedSource();
+
+  if (calStatus) calStatus.textContent = 'Generating 30-day prayer calendar alarms...';
+  if (syncBtn) syncBtn.style.opacity = '0.5';
+
+  const events = [];
+  const today = new Date();
+
+  for (let d = 0; d < 30; d++) {
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + d);
+
+    let timings = null;
+    if (source === 'ifis') timings = await fetchIfis(place, toIfisDate(targetDate));
+    if (!timings) {
+      try { timings = await fetchAladhan(place, toAladhanDate(targetDate)); } catch (_) {}
+    }
+
+    if (!timings) continue;
+
+    PRAYERS.forEach(prayer => {
+      const t = timings[prayer];
+      if (!t) return;
+      const [h, m] = t.split(':').map(Number);
+
+      const startDate = new Date(targetDate);
+      startDate.setHours(h, m, 0, 0);
+
+      const endDate = new Date(startDate);
+      endDate.setMinutes(startDate.getMinutes() + 20);
+
+      function formatIcsTime(dt) {
+        return dt.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      }
+
+      const uid = `prayer-${prayer.toLowerCase()}-${toIfisDate(targetDate)}@prayertimes.se`;
+      const dtStart = formatIcsTime(startDate);
+      const dtEnd = formatIcsTime(endDate);
+
+      events.push([
+        'BEGIN:VEVENT',
+        `UID:${uid}`,
+        `DTSTAMP:${formatIcsTime(new Date())}`,
+        `DTSTART:${dtStart}`,
+        `DTEND:${dtEnd}`,
+        `SUMMARY:🕌 ${prayer} Prayer Time (${t})`,
+        `DESCRIPTION:It is time for ${prayer} prayer in ${place.name} (${t}).`,
+        'BEGIN:VALARM',
+        'TRIGGER:-PT0M',
+        'ACTION:DISPLAY',
+        `DESCRIPTION:It's time for ${prayer} prayer`,
+        'END:VALARM',
+        'END:VEVENT'
+      ].join('\r\n'));
+    });
+  }
+
+  const icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Prayer Times Sweden PWA//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:Prayer Times Sweden',
+    'X-WR-TIMEZONE:Europe/Stockholm',
+    ...events,
+    'END:VCALENDAR'
+  ].join('\r\n');
+
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Prayer-Times-${place.name.replace(/\s+/g, '-')}-30Days.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  if (calStatus) calStatus.textContent = `✓ Downloaded 30-day prayer alarms for ${place.name}! Open the file to import alarms into Apple Calendar or Google Calendar.`;
+  if (syncBtn) syncBtn.style.opacity = '1';
 }
 
 async function enableNotifications() {
@@ -879,6 +967,8 @@ function init() {
   notifyCheck.addEventListener('change', handleNotifyToggle);
   testNotifyBtn.addEventListener('click', triggerTestNotification);
   if (compassSensorBtn) compassSensorBtn.addEventListener('click', toggleLiveCompassSensor);
+  const syncCalendarBtn = document.getElementById('sync-calendar-btn');
+  if (syncCalendarBtn) syncCalendarBtn.addEventListener('click', generateIcsCalendarAlarms);
 }
 
 // Service Worker Registration

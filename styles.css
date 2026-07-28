@@ -506,6 +506,68 @@ select:focus {
   color: var(--primary);
 }
 
+/* --- Guaranteed Calendar Alarms Card --- */
+.calendar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-icon {
+  color: var(--accent-gold);
+}
+
+.calendar-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.badge-guaranteed {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff;
+  padding: 3px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.05em;
+}
+
+.calendar-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.qibla-btn--cal {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25);
+}
+
+.qibla-btn--cal:hover {
+  box-shadow: 0 6px 18px rgba(217, 119, 6, 0.35);
+}
+
+.cal-status {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 /* --- Qibla Compass --- */
 .qibla-card {
   text-align: center;
