@@ -567,6 +567,23 @@ function urlBase64ToUint8Array(base64) {
   return new Uint8Array([...atob(b64)].map(c => c.charCodeAt(0)));
 }
 
+// --- Per-Prayer Notification Preferences Helper ---
+function getNotifySelection() {
+  const defaults = { Fajr: true, Dhuhr: true, Asr: true, Maghrib: true, Isha: true };
+  try {
+    const stored = localStorage.getItem('prayer-notify-selection');
+    return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
+  } catch (_) {
+    return defaults;
+  }
+}
+
+function saveNotifySelection(selection) {
+  try {
+    localStorage.setItem('prayer-notify-selection', JSON.stringify(selection));
+  } catch (_) {}
+}
+
 async function subscribeToPush(timings) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
@@ -578,7 +595,9 @@ async function subscribeToPush(timings) {
     });
 
     const now = new Date();
+    const selectedMap = getNotifySelection();
     const prayers = PRAYERS.map(name => {
+      if (!selectedMap[name]) return null;
       const t = timings[name];
       if (!t) return null;
       const [h, m] = t.split(':').map(Number);
@@ -616,8 +635,10 @@ function checkAndNotify() {
   const todayStr = toIfisDate(now);
   const nowH = now.getHours();
   const nowM = now.getMinutes();
+  const selectedMap = getNotifySelection();
 
   PRAYERS.forEach(prayer => {
+    if (!selectedMap[prayer]) return;
     const t = todayTimings[prayer];
     if (!t) return;
     const [h, m] = t.split(':').map(Number);
@@ -653,7 +674,10 @@ function checkAndNotify() {
 function countUpcoming(timings) {
   const now = new Date();
   const nowMins = now.getHours() * 60 + now.getMinutes();
+  const selectedMap = getNotifySelection();
+
   return PRAYERS.filter(p => {
+    if (!selectedMap[p]) return false;
     const t = timings[p];
     if (!t) return false;
     const [h, m] = t.split(':').map(Number);
@@ -705,7 +729,10 @@ async function generateIcsCalendarAlarms() {
 
     if (!timings) continue;
 
+    const selectedMap = getNotifySelection();
+
     PRAYERS.forEach(prayer => {
+      if (!selectedMap[prayer]) return;
       const t = timings[prayer];
       if (!t) return;
       const [h, m] = t.split(':').map(Number);
@@ -969,6 +996,22 @@ function init() {
   if (compassSensorBtn) compassSensorBtn.addEventListener('click', toggleLiveCompassSensor);
   const syncCalendarBtn = document.getElementById('sync-calendar-btn');
   if (syncCalendarBtn) syncCalendarBtn.addEventListener('click', generateIcsCalendarAlarms);
+
+  // Init Per-Prayer Notification Checkboxes
+  const initialSelection = getNotifySelection();
+  const chipChecks = document.querySelectorAll('.prayer-select-check');
+  chipChecks.forEach(chk => {
+    const prayerName = chk.dataset.prayer;
+    if (prayerName) chk.checked = !!initialSelection[prayerName];
+    chk.addEventListener('change', () => {
+      const currentSelection = getNotifySelection();
+      currentSelection[prayerName] = chk.checked;
+      saveNotifySelection(currentSelection);
+      if (todayTimings && notifyCheck.checked) {
+        scheduleNotifications(todayTimings);
+      }
+    });
+  });
 }
 
 // Service Worker Registration

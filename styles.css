@@ -488,6 +488,65 @@ select:focus {
   line-height: 1.4;
 }
 
+/* --- Per-Prayer Selection Chips --- */
+.prayer-select-container {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.select-prayers-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+}
+
+.prayer-select-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: space-between;
+}
+
+.prayer-chip {
+  cursor: pointer;
+  user-select: none;
+  flex: 1 1 auto;
+  min-width: 65px;
+}
+
+.prayer-chip input {
+  display: none;
+}
+
+.chip-label {
+  display: inline-block;
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.prayer-chip input:checked + .chip-label {
+  background: var(--primary-light);
+  border-color: var(--primary-border);
+  color: var(--primary);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(15, 81, 50, 0.1);
+}
+
 .btn-secondary {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);

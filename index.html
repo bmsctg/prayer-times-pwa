@@ -114,6 +114,33 @@
         </label>
         <button type="button" id="test-notify-btn" class="btn-secondary btn-sm">Test Alert</button>
       </div>
+
+      <div class="prayer-select-container">
+        <span class="select-prayers-title">Notify for selected prayers:</span>
+        <div id="prayer-selection-group" class="prayer-select-grid">
+          <label class="prayer-chip">
+            <input type="checkbox" class="prayer-select-check" data-prayer="Fajr" checked />
+            <span class="chip-label">🌅 Fajr</span>
+          </label>
+          <label class="prayer-chip">
+            <input type="checkbox" class="prayer-select-check" data-prayer="Dhuhr" checked />
+            <span class="chip-label">☀️ Dhuhr</span>
+          </label>
+          <label class="prayer-chip">
+            <input type="checkbox" class="prayer-select-check" data-prayer="Asr" checked />
+            <span class="chip-label">🌇 Asr</span>
+          </label>
+          <label class="prayer-chip">
+            <input type="checkbox" class="prayer-select-check" data-prayer="Maghrib" checked />
+            <span class="chip-label">🌆 Maghrib</span>
+          </label>
+          <label class="prayer-chip">
+            <input type="checkbox" class="prayer-select-check" data-prayer="Isha" checked />
+            <span class="chip-label">🌙 Isha</span>
+          </label>
+        </div>
+      </div>
+
       <p id="notify-status" class="notify-status">Checking notification status...</p>
     </div>
 
