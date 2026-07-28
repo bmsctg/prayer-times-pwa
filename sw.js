@@ -1,5 +1,5 @@
 // Service Worker for Prayer Times PWA
-const CACHE_NAME = 'prayer-times-v5';
+const CACHE_NAME = 'prayer-times-v6';
 const ASSETS = [
   './',
   './index.html',

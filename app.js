@@ -704,18 +704,21 @@ async function scheduleNotifications(timings) {
   notifyStatus.textContent = `✓ ${upcoming} prayer alert${upcoming > 1 ? 's' : ''} active today. (Use 'Add 30-Day Alarms' below for 100% lock-screen alarms on mobile)`;
 }
 
-// ── 30-Day Phone System Calendar (.ics) Alarm Generator ───────────────────
-async function generateIcsCalendarAlarms() {
+// ── 30-Day Phone System Calendar (.ics) Alarm Generator & Manager ─────────
+async function generateIcsCalendarAlarms(clearAll = false) {
   const syncBtn = document.getElementById('sync-calendar-btn');
+  const clearBtn = document.getElementById('clear-calendar-btn');
   const calStatus = document.getElementById('cal-status');
   const place = getSelectedPlace();
   const source = getSelectedSource();
 
-  if (calStatus) calStatus.textContent = 'Generating 30-day prayer calendar alarms...';
+  if (calStatus) calStatus.textContent = clearAll ? 'Generating calendar removal request...' : 'Updating 30-day prayer calendar alarms...';
   if (syncBtn) syncBtn.style.opacity = '0.5';
+  if (clearBtn) clearBtn.style.opacity = '0.5';
 
   const events = [];
   const today = new Date();
+  const selectedMap = clearAll ? {} : getNotifySelection();
 
   for (let d = 0; d < 30; d++) {
     const targetDate = new Date(today);
@@ -729,10 +732,7 @@ async function generateIcsCalendarAlarms() {
 
     if (!timings) continue;
 
-    const selectedMap = getNotifySelection();
-
     PRAYERS.forEach(prayer => {
-      if (!selectedMap[prayer]) return;
       const t = timings[prayer];
       if (!t) return;
       const [h, m] = t.split(':').map(Number);
@@ -751,21 +751,41 @@ async function generateIcsCalendarAlarms() {
       const dtStart = formatIcsTime(startDate);
       const dtEnd = formatIcsTime(endDate);
 
-      events.push([
-        'BEGIN:VEVENT',
-        `UID:${uid}`,
-        `DTSTAMP:${formatIcsTime(new Date())}`,
-        `DTSTART:${dtStart}`,
-        `DTEND:${dtEnd}`,
-        `SUMMARY:🕌 ${prayer} Prayer Time (${t})`,
-        `DESCRIPTION:It is time for ${prayer} prayer in ${place.name} (${t}).`,
-        'BEGIN:VALARM',
-        'TRIGGER:-PT0M',
-        'ACTION:DISPLAY',
-        `DESCRIPTION:It's time for ${prayer} prayer`,
-        'END:VALARM',
-        'END:VEVENT'
-      ].join('\r\n'));
+      const isSelected = !!selectedMap[prayer];
+
+      if (isSelected) {
+        // Active selected prayer: STATUS:CONFIRMED with VALARM trigger
+        events.push([
+          'BEGIN:VEVENT',
+          `UID:${uid}`,
+          `DTSTAMP:${formatIcsTime(new Date())}`,
+          `DTSTART:${dtStart}`,
+          `DTEND:${dtEnd}`,
+          'STATUS:CONFIRMED',
+          'SEQUENCE:2',
+          `SUMMARY:🕌 ${prayer} Prayer Time (${t})`,
+          `DESCRIPTION:It is time for ${prayer} prayer in ${place.name} (${t}).`,
+          'BEGIN:VALARM',
+          'TRIGGER:-PT0M',
+          'ACTION:DISPLAY',
+          `DESCRIPTION:It's time for ${prayer} prayer`,
+          'END:VALARM',
+          'END:VEVENT'
+        ].join('\r\n'));
+      } else {
+        // Unselected or cleared prayer: STATUS:CANCELLED to delete from phone calendar
+        events.push([
+          'BEGIN:VEVENT',
+          `UID:${uid}`,
+          `DTSTAMP:${formatIcsTime(new Date())}`,
+          `DTSTART:${dtStart}`,
+          `DTEND:${dtEnd}`,
+          'STATUS:CANCELLED',
+          'SEQUENCE:2',
+          `SUMMARY:🕌 ${prayer} Prayer Time (Cancelled)`,
+          'END:VEVENT'
+        ].join('\r\n'));
+      }
     });
   }
 
@@ -786,13 +806,19 @@ async function generateIcsCalendarAlarms() {
 
   const a = document.createElement('a');
   a.href = url;
-  a.download = `Prayer-Times-${place.name.replace(/\s+/g, '-')}-30Days.ics`;
+  a.download = clearAll ? `Clear-Prayer-Alarms-30Days.ics` : `Update-Prayer-Alarms-${place.name.replace(/\s+/g, '-')}-30Days.ics`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
 
-  if (calStatus) calStatus.textContent = `✓ Downloaded 30-day prayer alarms for ${place.name}! Open the file to import alarms into Apple Calendar or Google Calendar.`;
+  if (calStatus) {
+    calStatus.textContent = clearAll
+      ? `✓ Downloaded cancellation file! Open it to remove all prayer alarms from your phone calendar.`
+      : `✓ Updated 30-day prayer alarms! Open the file to apply your new selection to your phone calendar.`;
+  }
+
   if (syncBtn) syncBtn.style.opacity = '1';
+  if (clearBtn) clearBtn.style.opacity = '1';
 }
 
 async function enableNotifications() {
@@ -995,7 +1021,9 @@ function init() {
   testNotifyBtn.addEventListener('click', triggerTestNotification);
   if (compassSensorBtn) compassSensorBtn.addEventListener('click', toggleLiveCompassSensor);
   const syncCalendarBtn = document.getElementById('sync-calendar-btn');
-  if (syncCalendarBtn) syncCalendarBtn.addEventListener('click', generateIcsCalendarAlarms);
+  if (syncCalendarBtn) syncCalendarBtn.addEventListener('click', () => generateIcsCalendarAlarms(false));
+  const clearCalendarBtn = document.getElementById('clear-calendar-btn');
+  if (clearCalendarBtn) clearCalendarBtn.addEventListener('click', () => generateIcsCalendarAlarms(true));
 
   // Init Per-Prayer Notification Checkboxes
   const initialSelection = getNotifySelection();

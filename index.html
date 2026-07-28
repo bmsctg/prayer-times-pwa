@@ -156,15 +156,20 @@
         <span class="badge-guaranteed">100% Reliable</span>
       </div>
       <p class="calendar-desc">
-        Sync 30 days of prayer alarms directly into your iPhone / Android native system calendar (Apple Calendar or Google Calendar). Works even when your phone is locked or battery-saver mode is active.
+        Sync 30 days of prayer alarms directly into your iPhone / Android native system calendar (Apple Calendar or Google Calendar). Updating your selection automatically updates active alarms and removes unselected ones.
       </p>
 
-      <button type="button" id="sync-calendar-btn" class="qibla-btn qibla-btn--cal">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-          <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-        </svg>
-        <span>Add 30-Day Prayer Alarms to Phone</span>
-      </button>
+      <div class="calendar-actions">
+        <button type="button" id="sync-calendar-btn" class="qibla-btn qibla-btn--cal">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+          </svg>
+          <span>Sync / Update Selected Alarms in Calendar</span>
+        </button>
+        <button type="button" id="clear-calendar-btn" class="qibla-link-secondary danger">
+          Remove / Clear All Alarms from Calendar
+        </button>
+      </div>
       <p id="cal-status" class="cal-status"></p>
     </div>
 

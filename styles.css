@@ -612,6 +612,13 @@ select:focus {
   line-height: 1.45;
 }
 
+.calendar-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
 .qibla-btn--cal {
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
   box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25);
@@ -619,6 +626,17 @@ select:focus {
 
 .qibla-btn--cal:hover {
   box-shadow: 0 6px 18px rgba(217, 119, 6, 0.35);
+}
+
+.qibla-link-secondary.danger {
+  color: var(--text-muted);
+  border: none;
+  background: transparent;
+  font-family: inherit;
+}
+
+.qibla-link-secondary.danger:hover {
+  color: #ef4444;
 }
 
 .cal-status {
