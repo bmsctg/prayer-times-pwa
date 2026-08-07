@@ -173,6 +173,35 @@
       <p id="cal-status" class="cal-status"></p>
     </div>
 
+    <!-- Download 30-Day Schedule Card -->
+    <div class="download-card glass-card">
+      <div class="download-header">
+        <div class="download-title-group">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" class="dl-icon">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+          </svg>
+          <span class="download-title">Download 30-Day Schedule</span>
+        </div>
+        <span class="badge-offline">Offline Copy</span>
+      </div>
+      <p class="download-desc">
+        Save a clean, easy-to-read 30-day timetable of all 5 daily prayers directly onto your device (includes City & Calculation Method details).
+      </p>
+
+      <div class="download-actions">
+        <button type="button" id="download-schedule-txt-btn" class="qibla-btn qibla-btn--dl">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+          </svg>
+          <span>Download Text Timetable (.txt)</span>
+        </button>
+        <button type="button" id="download-schedule-csv-btn" class="btn-secondary btn-full">
+          <span>Download CSV Spreadsheet (.csv)</span>
+        </button>
+      </div>
+      <p id="download-status" class="download-status"></p>
+    </div>
+
     <!-- Graphical & Live Magnetometer Qibla Compass Card -->
     <div class="qibla-card glass-card">
       <div class="qibla-header">
