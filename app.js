@@ -716,6 +716,13 @@ async function generateIcsCalendarAlarms(clearAll = false) {
   if (syncBtn) syncBtn.style.opacity = '0.5';
   if (clearBtn) clearBtn.style.opacity = '0.5';
 
+  if (clearAll) {
+    const clearedSelection = { Fajr: false, Dhuhr: false, Asr: false, Maghrib: false, Isha: false };
+    saveNotifySelection(clearedSelection);
+    const chipChecks = document.querySelectorAll('.prayer-select-check');
+    chipChecks.forEach(chk => { chk.checked = false; });
+  }
+
   const events = [];
   const today = new Date();
   const selectedMap = clearAll ? {} : getNotifySelection();
@@ -751,7 +758,7 @@ async function generateIcsCalendarAlarms(clearAll = false) {
       const dtStart = formatIcsTime(startDate);
       const dtEnd = formatIcsTime(endDate);
 
-      const isSelected = !!selectedMap[prayer];
+      const isSelected = !clearAll && !!selectedMap[prayer];
 
       if (isSelected) {
         // Active selected prayer: STATUS:CONFIRMED with VALARM trigger
@@ -773,7 +780,7 @@ async function generateIcsCalendarAlarms(clearAll = false) {
           'END:VEVENT'
         ].join('\r\n'));
       } else {
-        // Unselected or cleared prayer: STATUS:CANCELLED to delete from phone calendar
+        // Unselected or cleared prayer: STATUS:CANCELLED with SEQUENCE:99 to cancel in phone calendar
         events.push([
           'BEGIN:VEVENT',
           `UID:${uid}`,
@@ -781,7 +788,7 @@ async function generateIcsCalendarAlarms(clearAll = false) {
           `DTSTART:${dtStart}`,
           `DTEND:${dtEnd}`,
           'STATUS:CANCELLED',
-          'SEQUENCE:2',
+          'SEQUENCE:99',
           `SUMMARY:🕌 ${prayer} Prayer Time (Cancelled)`,
           'END:VEVENT'
         ].join('\r\n'));
@@ -794,7 +801,7 @@ async function generateIcsCalendarAlarms(clearAll = false) {
     'VERSION:2.0',
     'PRODID:-//Prayer Times Sweden PWA//EN',
     'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
+    `METHOD:${clearAll ? 'CANCEL' : 'PUBLISH'}`,
     'X-WR-CALNAME:Prayer Times Sweden',
     'X-WR-TIMEZONE:Europe/Stockholm',
     ...events,
@@ -813,7 +820,7 @@ async function generateIcsCalendarAlarms(clearAll = false) {
 
   if (calStatus) {
     calStatus.textContent = clearAll
-      ? `✓ Downloaded cancellation file! Open it to remove all prayer alarms from your phone calendar.`
+      ? `✓ Downloaded calendar cancellation file! Open it to cancel all prayer alarms in your calendar app. All prayer alert toggles have been cleared.`
       : `✓ Updated 30-day prayer alarms! Open the file to apply your new selection to your phone calendar.`;
   }
 
