@@ -887,44 +887,41 @@ async function download30DaySchedule(fileFormat = 'pdf') {
 
     // Emerald Header Banner
     doc.setFillColor(15, 81, 50); // #0f5132
-    doc.rect(0, 0, 210, 28, 'F');
+    doc.rect(0, 0, 210, 20, 'F');
 
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text('30-DAY ISLAMIC PRAYER SCHEDULE', 105, 13, { align: 'center' });
-    doc.setFontSize(10);
+    doc.setFontSize(14);
+    doc.text('30-DAY ISLAMIC PRAYER SCHEDULE', 105, 11, { align: 'center' });
+    doc.setFontSize(8.5);
     doc.setFont('helvetica', 'normal');
-    doc.text('PRAYER TIMES SWEDEN', 105, 20, { align: 'center' });
+    doc.text('PRAYER TIMES SWEDEN', 105, 16.5, { align: 'center' });
 
-    // Metadata Card Box
+    // Compact Metadata Card Box
     doc.setDrawColor(226, 232, 240); // #e2e8f0
     doc.setFillColor(248, 250, 252); // #f8fafc
-    doc.roundedRect(14, 34, 182, 24, 3, 3, 'FD');
+    doc.roundedRect(12, 23, 186, 17, 2, 2, 'FD');
 
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setTextColor(51, 65, 85); // #334155
     doc.setFont('helvetica', 'bold');
-    doc.text('City:', 18, 41);
-    doc.text('Calculation Method:', 18, 48);
-    doc.text('Generated On:', 18, 54);
+    doc.text('City:', 16, 28.5);
+    doc.text('Period:', 110, 28.5);
+    doc.text('Calculation Method:', 16, 34.5);
+    doc.text('Generated On:', 110, 34.5);
 
     doc.setFont('helvetica', 'normal');
-    doc.text(`${place.name} (${place.country})`, 55, 41);
-    doc.text(sourceName, 55, 48);
-    doc.text(generatedDateStr, 55, 54);
+    doc.text(`${place.name} (${place.country})`, 48, 28.5);
+    doc.text(`${startDateStr} to ${endDateStr} (30 Days)`, 138, 28.5);
+    doc.text(sourceName, 48, 34.5);
+    doc.text(generatedDateStr, 138, 34.5);
 
-    doc.setFont('helvetica', 'bold');
-    doc.text('Period:', 120, 41);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${startDateStr} to ${endDateStr} (30 Days)`, 135, 41);
-
-    // Timetable AutoTable
+    // Timetable AutoTable (Single Page Compact Layout)
     const head = [['Date', 'Day', 'Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']];
     const body = rows.map(r => [r.date, r.day, r.fajr, r.dhuhr, r.asr, r.maghrib, r.isha]);
 
     doc.autoTable({
-      startY: 63,
+      startY: 43,
       head: head,
       body: body,
       theme: 'grid',
@@ -933,27 +930,28 @@ async function download30DaySchedule(fileFormat = 'pdf') {
         textColor: [255, 255, 255],
         fontStyle: 'bold',
         halign: 'center',
-        fontSize: 9.5
+        fontSize: 8.5,
+        cellPadding: 1.5
       },
       bodyStyles: {
-        fontSize: 8.5,
+        fontSize: 7.5,
         textColor: [30, 41, 59],
         halign: 'center',
-        cellPadding: 2.2
+        cellPadding: 1.2
       },
       alternateRowStyles: {
         fillColor: [248, 250, 252]
       },
       columnStyles: {
-        0: { cellWidth: 32, fontStyle: 'bold' },
+        0: { cellWidth: 30, fontStyle: 'bold' },
         1: { cellWidth: 20 },
-        2: { cellWidth: 26 },
-        3: { cellWidth: 26 },
-        4: { cellWidth: 26 },
-        5: { cellWidth: 26 },
-        6: { cellWidth: 26 }
+        2: { cellWidth: 27 },
+        3: { cellWidth: 27 },
+        4: { cellWidth: 27 },
+        5: { cellWidth: 27 },
+        6: { cellWidth: 27 }
       },
-      margin: { left: 14, right: 14 }
+      margin: { left: 12, right: 12 }
     });
 
     // Page Footer
