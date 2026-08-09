@@ -799,7 +799,7 @@ async function generateIcsCalendarAlarms(clearAll = false) {
   const icsContent = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Prayer Times Sweden PWA//EN',
+    'PRODID:-//Prayer Times Sweden//EN',
     'CALSCALE:GREGORIAN',
     `METHOD:${clearAll ? 'CANCEL' : 'PUBLISH'}`,
     'X-WR-CALNAME:Prayer Times Sweden',
@@ -828,8 +828,9 @@ async function generateIcsCalendarAlarms(clearAll = false) {
   if (clearBtn) clearBtn.style.opacity = '1';
 }
 
-// ── 30-Day Mobile-Friendly Prayer Schedule Exporter (.txt & .csv) ──────────
-async function download30DaySchedule(fileFormat = 'txt') {
+// ── 30-Day Mobile-Friendly Prayer Schedule Exporter (.pdf, .txt & .csv) ────
+async function download30DaySchedule(fileFormat = 'pdf') {
+  const pdfBtn = document.getElementById('download-schedule-pdf-btn');
   const txtBtn = document.getElementById('download-schedule-txt-btn');
   const csvBtn = document.getElementById('download-schedule-csv-btn');
   const statusEl = document.getElementById('download-status');
@@ -838,6 +839,7 @@ async function download30DaySchedule(fileFormat = 'txt') {
   const sourceName = sourceKey === 'ifis' ? 'Islamiska Förbundet (IFIS)' : 'Aladhan (MWL Method)';
 
   if (statusEl) statusEl.textContent = 'Generating 30-day prayer timetable...';
+  if (pdfBtn) pdfBtn.style.opacity = '0.5';
   if (txtBtn) txtBtn.style.opacity = '0.5';
   if (csvBtn) csvBtn.style.opacity = '0.5';
 
@@ -871,75 +873,172 @@ async function download30DaySchedule(fileFormat = 'txt') {
   const endDateStr = rows.length > 0 ? rows[rows.length - 1].date : toIfisDate(today);
   const generatedDateStr = toIfisDate(today);
 
-  let fileContent = '';
-  let mimeType = '';
-  let fileName = '';
+  if (fileFormat === 'pdf') {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      if (statusEl) statusEl.textContent = 'PDF generator loading... please try again in a moment.';
+      if (pdfBtn) pdfBtn.style.opacity = '1';
+      if (txtBtn) txtBtn.style.opacity = '1';
+      if (csvBtn) csvBtn.style.opacity = '1';
+      return;
+    }
 
-  if (fileFormat === 'csv') {
-    mimeType = 'text/csv;charset=utf-8;';
-    fileName = `Prayer-Schedule-${place.name.replace(/\s+/g, '-')}-30Days.csv`;
-    const lines = [
-      `# City,${place.name} (${place.country})`,
-      `# Calculation Method,${sourceName}`,
-      `# Generated On,${generatedDateStr}`,
-      `# Period,${startDateStr} to ${endDateStr} (30 Days)`,
-      'Date,Day,Fajr,Dhuhr,Asr,Maghrib,Isha',
-      ...rows.map(r => `${r.date},${r.day},${r.fajr},${r.dhuhr},${r.asr},${r.maghrib},${r.isha}`)
-    ];
-    fileContent = lines.join('\n');
-  } else {
-    // TXT format - monospaced mobile-friendly readable document
-    mimeType = 'text/plain;charset=utf-8;';
-    fileName = `Prayer-Schedule-${place.name.replace(/\s+/g, '-')}-30Days.txt`;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-    const divider = '='.repeat(62);
-    const subDivider = '-'.repeat(62);
+    // Emerald Header Banner
+    doc.setFillColor(15, 81, 50); // #0f5132
+    doc.rect(0, 0, 210, 28, 'F');
 
-    const header = [
-      divider,
-      '               30-DAY ISLAMIC PRAYER SCHEDULE',
-      divider,
-      `City:               ${place.name} (${place.country})`,
-      `Calculation Method: ${sourceName}`,
-      `Generated On:       ${generatedDateStr}`,
-      `Period:             ${startDateStr} to ${endDateStr} (30 Days)`,
-      subDivider,
-      'Date          Day    Fajr    Dhuhr   Asr     Maghrib Isha',
-      subDivider
-    ];
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('30-DAY ISLAMIC PRAYER SCHEDULE', 105, 13, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('PRAYER TIMES SWEDEN', 105, 20, { align: 'center' });
 
-    const tableRows = rows.map(r => {
-      const datePad = r.date.padEnd(14, ' ');
-      const dayPad = r.day.padEnd(7, ' ');
-      const fajrPad = r.fajr.padEnd(8, ' ');
-      const dhuhrPad = r.dhuhr.padEnd(8, ' ');
-      const asrPad = r.asr.padEnd(8, ' ');
-      const maghribPad = r.maghrib.padEnd(8, ' ');
-      return `${datePad}${dayPad}${fajrPad}${dhuhrPad}${asrPad}${maghribPad}${r.isha}`;
+    // Metadata Card Box
+    doc.setDrawColor(226, 232, 240); // #e2e8f0
+    doc.setFillColor(248, 250, 252); // #f8fafc
+    doc.roundedRect(14, 34, 182, 24, 3, 3, 'FD');
+
+    doc.setFontSize(9);
+    doc.setTextColor(51, 65, 85); // #334155
+    doc.setFont('helvetica', 'bold');
+    doc.text('City:', 18, 41);
+    doc.text('Calculation Method:', 18, 48);
+    doc.text('Generated On:', 18, 54);
+
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${place.name} (${place.country})`, 55, 41);
+    doc.text(sourceName, 55, 48);
+    doc.text(generatedDateStr, 55, 54);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Period:', 120, 41);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${startDateStr} to ${endDateStr} (30 Days)`, 135, 41);
+
+    // Timetable AutoTable
+    const head = [['Date', 'Day', 'Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']];
+    const body = rows.map(r => [r.date, r.day, r.fajr, r.dhuhr, r.asr, r.maghrib, r.isha]);
+
+    doc.autoTable({
+      startY: 63,
+      head: head,
+      body: body,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [15, 81, 50],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'center',
+        fontSize: 9.5
+      },
+      bodyStyles: {
+        fontSize: 8.5,
+        textColor: [30, 41, 59],
+        halign: 'center',
+        cellPadding: 2.2
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252]
+      },
+      columnStyles: {
+        0: { cellWidth: 32, fontStyle: 'bold' },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 26 },
+        3: { cellWidth: 26 },
+        4: { cellWidth: 26 },
+        5: { cellWidth: 26 },
+        6: { cellWidth: 26 }
+      },
+      margin: { left: 14, right: 14 }
     });
 
-    const footer = [
-      subDivider,
-      'Generated by Prayer Times Sweden PWA (prayertimes.se)',
-      divider
-    ];
+    // Page Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text('Generated by Prayer Times Sweden (prayertimes.se)', 14, 287);
+      doc.text(`Page ${i} of ${pageCount}`, 196, 287, { align: 'right' });
+    }
 
-    fileContent = [...header, ...tableRows, ...footer].join('\n');
+    doc.save(`Prayer-Schedule-${place.name.replace(/\s+/g, '-')}-30Days.pdf`);
+  } else {
+    let fileContent = '';
+    let mimeType = '';
+    let fileName = '';
+
+    if (fileFormat === 'csv') {
+      mimeType = 'text/csv;charset=utf-8;';
+      fileName = `Prayer-Schedule-${place.name.replace(/\s+/g, '-')}-30Days.csv`;
+      const lines = [
+        `# City,${place.name} (${place.country})`,
+        `# Calculation Method,${sourceName}`,
+        `# Generated On,${generatedDateStr}`,
+        `# Period,${startDateStr} to ${endDateStr} (30 Days)`,
+        'Date,Day,Fajr,Dhuhr,Asr,Maghrib,Isha',
+        ...rows.map(r => `${r.date},${r.day},${r.fajr},${r.dhuhr},${r.asr},${r.maghrib},${r.isha}`)
+      ];
+      fileContent = lines.join('\n');
+    } else {
+      // TXT format - monospaced mobile-friendly readable document
+      mimeType = 'text/plain;charset=utf-8;';
+      fileName = `Prayer-Schedule-${place.name.replace(/\s+/g, '-')}-30Days.txt`;
+
+      const divider = '='.repeat(62);
+      const subDivider = '-'.repeat(62);
+
+      const header = [
+        divider,
+        '               30-DAY ISLAMIC PRAYER SCHEDULE',
+        divider,
+        `City:               ${place.name} (${place.country})`,
+        `Calculation Method: ${sourceName}`,
+        `Generated On:       ${generatedDateStr}`,
+        `Period:             ${startDateStr} to ${endDateStr} (30 Days)`,
+        subDivider,
+        'Date          Day    Fajr    Dhuhr   Asr     Maghrib Isha',
+        subDivider
+      ];
+
+      const tableRows = rows.map(r => {
+        const datePad = r.date.padEnd(14, ' ');
+        const dayPad = r.day.padEnd(7, ' ');
+        const fajrPad = r.fajr.padEnd(8, ' ');
+        const dhuhrPad = r.dhuhr.padEnd(8, ' ');
+        const asrPad = r.asr.padEnd(8, ' ');
+        const maghribPad = r.maghrib.padEnd(8, ' ');
+        return `${datePad}${dayPad}${fajrPad}${dhuhrPad}${asrPad}${maghribPad}${r.isha}`;
+      });
+
+      const footer = [
+        subDivider,
+        'Generated by Prayer Times Sweden (prayertimes.se)',
+        divider
+      ];
+
+      fileContent = [...header, ...tableRows, ...footer].join('\n');
+    }
+
+    const blob = new Blob([fileContent], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
-
-  const blob = new Blob([fileContent], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
 
   if (statusEl) {
     statusEl.textContent = `✓ Downloaded 30-day prayer schedule (${fileFormat.toUpperCase()}) for ${place.name}!`;
   }
 
+  if (pdfBtn) pdfBtn.style.opacity = '1';
   if (txtBtn) txtBtn.style.opacity = '1';
   if (csvBtn) csvBtn.style.opacity = '1';
 }
@@ -1147,6 +1246,8 @@ function init() {
   if (syncCalendarBtn) syncCalendarBtn.addEventListener('click', () => generateIcsCalendarAlarms(false));
   const clearCalendarBtn = document.getElementById('clear-calendar-btn');
   if (clearCalendarBtn) clearCalendarBtn.addEventListener('click', () => generateIcsCalendarAlarms(true));
+  const downloadPdfBtn = document.getElementById('download-schedule-pdf-btn');
+  if (downloadPdfBtn) downloadPdfBtn.addEventListener('click', () => download30DaySchedule('pdf'));
   const downloadTxtBtn = document.getElementById('download-schedule-txt-btn');
   if (downloadTxtBtn) downloadTxtBtn.addEventListener('click', () => download30DaySchedule('txt'));
   const downloadCsvBtn = document.getElementById('download-schedule-csv-btn');

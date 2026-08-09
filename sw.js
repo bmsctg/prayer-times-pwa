@@ -1,5 +1,5 @@
-// Service Worker for Prayer Times PWA
-const CACHE_NAME = 'prayer-times-v6';
+// Service Worker for Prayer Times
+const CACHE_NAME = 'prayer-times-v7';
 const ASSETS = [
   './',
   './index.html',
@@ -9,7 +9,9 @@ const ASSETS = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './adhan.wav'
+  './adhan.wav',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js'
 ];
 
 // Install Event - Pre-cache essential offline assets

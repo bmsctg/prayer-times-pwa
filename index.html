@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0f5132" />
   <meta name="description" content="Accurate Islamic prayer times in Sweden with push notifications, offline support, and Qibla compass." />
-  <title>Prayer Times – Sweden PWA</title>
+  <title>Prayer Times – Sweden</title>
+  
+  <!-- jsPDF & AutoTable for client-side PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
@@ -110,7 +114,7 @@
         <label class="notify-toggle">
           <input type="checkbox" id="notify-check" />
           <span class="notify-slider"></span>
-          <span class="notify-label-text">Web & PWA Push Alerts</span>
+          <span class="notify-label-text">Web & Push Alerts</span>
         </label>
         <button type="button" id="test-notify-btn" class="btn-secondary btn-sm">Test Alert</button>
       </div>
@@ -189,10 +193,13 @@
       </p>
 
       <div class="download-actions">
-        <button type="button" id="download-schedule-txt-btn" class="qibla-btn qibla-btn--dl">
+        <button type="button" id="download-schedule-pdf-btn" class="qibla-btn qibla-btn--dl">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+            <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zm4.5 2h1v-3h-1v3zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z"/>
           </svg>
+          <span>Download PDF Document (.pdf)</span>
+        </button>
+        <button type="button" id="download-schedule-txt-btn" class="btn-secondary btn-full">
           <span>Download Text Timetable (.txt)</span>
         </button>
         <button type="button" id="download-schedule-csv-btn" class="btn-secondary btn-full">
@@ -241,7 +248,7 @@
 
     <!-- Footer -->
     <footer class="copyright">
-      &copy; 2026 BMS • Sweden Prayer Times PWA
+      &copy; 2026 BMS • Sweden Prayer Times
     </footer>
 
   </div>
