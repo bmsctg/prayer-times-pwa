@@ -27,6 +27,9 @@ const themeToggleBtn = document.getElementById('theme-toggle-btn');
 const audioToggleBtn = document.getElementById('audio-toggle-btn');
 const audioIconOn = document.getElementById('audio-icon-on');
 const audioIconOff = document.getElementById('audio-icon-off');
+const helpModalBtn = document.getElementById('help-modal-btn');
+const helpModal = document.getElementById('help-modal');
+const closeHelpModalBtn = document.getElementById('close-help-modal-btn');
 
 // Application State
 let dayOffset = 0;
@@ -1185,6 +1188,54 @@ function init() {
       if (todayTimings && notifyCheck.checked) {
         scheduleNotifications(todayTimings);
       }
+    });
+  });
+
+  // Help Modal Setup
+  setupHelpModal();
+}
+
+function setupHelpModal() {
+  if (!helpModalBtn || !helpModal) return;
+
+  const openModal = () => {
+    helpModal.style.display = 'flex';
+    helpModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeModal = () => {
+    helpModal.style.display = 'none';
+    helpModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  };
+
+  helpModalBtn.addEventListener('click', openModal);
+  if (closeHelpModalBtn) closeHelpModalBtn.addEventListener('click', closeModal);
+
+  helpModal.addEventListener('click', (e) => {
+    if (e.target === helpModal) closeModal();
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && helpModal.style.display === 'flex') {
+      closeModal();
+    }
+  });
+
+  // Tab switching logic
+  const tabBtns = helpModal.querySelectorAll('.tab-btn');
+  const tabContents = helpModal.querySelectorAll('.tab-content');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.dataset.tab;
+      tabBtns.forEach(b => b.classList.remove('active'));
+      tabContents.forEach(c => c.classList.remove('active'));
+
+      btn.classList.add('active');
+      const activeContent = document.getElementById(`tab-${targetTab}`);
+      if (activeContent) activeContent.classList.add('active');
     });
   });
 }
