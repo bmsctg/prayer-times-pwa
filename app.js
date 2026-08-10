@@ -205,8 +205,8 @@ function updateQiblaDisplay() {
   if (qiblaDegreesEl) qiblaDegreesEl.textContent = bearingFormatted;
 
   if (isSensorActive && currentCompassHeading !== null) {
-    // Rotate cardinal directions (N, S, E, W) so 'N' constantly points to physical True North
-    if (compassMarks) compassMarks.style.transform = `rotate(${(-currentCompassHeading).toFixed(1)}deg)`;
+    // Hide cardinal direction markings (N, S, E, W) in Live mode for a clean uncluttered view
+    if (compassMarks) compassMarks.style.display = 'none';
 
     // Relative needle rotation: points toward Mecca as the user rotates the device
     let relativeAngle = (bearing - currentCompassHeading + 360) % 360;
@@ -234,8 +234,11 @@ function updateQiblaDisplay() {
       if (compassSensorStatus) compassSensorStatus.textContent = `Rotate phone to align needle with 🕋 Kaaba (Device Heading: ${currentCompassHeading.toFixed(0)}°)`;
     }
   } else {
-    // Static mode relative to North
-    if (compassMarks) compassMarks.style.transform = 'rotate(0deg)';
+    // Static mode relative to North (Show N, E, S, W markings)
+    if (compassMarks) {
+      compassMarks.style.display = 'block';
+      compassMarks.style.transform = 'rotate(0deg)';
+    }
     if (compassDial) compassDial.classList.remove('aligned');
     if (alignmentBadge) alignmentBadge.style.display = 'none';
     if (qiblaTextEl) qiblaTextEl.textContent = `Qibla direction: ${bearingFormatted} from North (${place.name})`;
