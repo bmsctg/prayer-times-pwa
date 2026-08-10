@@ -783,10 +783,8 @@ select:focus {
   position: absolute;
   top: 0;
   left: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: transform 0.15s ease-out;
+  pointer-events: none;
+  transition: transform 0.15s ease-out, opacity 0.2s ease;
 }
 
 .compass-mark {
@@ -794,12 +792,33 @@ select:focus {
   font-size: 0.72rem;
   font-weight: 800;
   color: var(--text-muted);
+  line-height: 1;
 }
 
-.compass-mark.north { top: 6px; color: #ef4444; }
-.compass-mark.east { right: 8px; }
-.compass-mark.south { bottom: 6px; }
-.compass-mark.west { left: 8px; }
+.compass-mark.north {
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ef4444;
+}
+
+.compass-mark.east {
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compass-mark.south {
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.compass-mark.west {
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
 
 .compass-needle {
   width: 100%;

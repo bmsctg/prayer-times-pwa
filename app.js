@@ -236,7 +236,7 @@ function updateQiblaDisplay() {
   } else {
     // Static mode relative to North (Show N, E, S, W markings)
     if (compassMarks) {
-      compassMarks.style.display = 'block';
+      compassMarks.style.display = '';
       compassMarks.style.transform = 'rotate(0deg)';
     }
     if (compassDial) compassDial.classList.remove('aligned');
