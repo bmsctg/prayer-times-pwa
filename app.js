@@ -186,6 +186,7 @@ let isSensorActive = false;
 let lastVibeTime = 0;
 
 const compassDial = document.getElementById('compass-dial');
+const compassMarks = document.getElementById('compass-marks');
 const alignmentBadge = document.getElementById('alignment-badge');
 const compassSensorBtn = document.getElementById('compass-sensor-btn');
 const sensorBtnText = document.getElementById('sensor-btn-text');
@@ -204,6 +205,9 @@ function updateQiblaDisplay() {
   if (qiblaDegreesEl) qiblaDegreesEl.textContent = bearingFormatted;
 
   if (isSensorActive && currentCompassHeading !== null) {
+    // Rotate cardinal directions (N, S, E, W) so 'N' constantly points to physical True North
+    if (compassMarks) compassMarks.style.transform = `rotate(${(-currentCompassHeading).toFixed(1)}deg)`;
+
     // Relative needle rotation: points toward Mecca as the user rotates the device
     let relativeAngle = (bearing - currentCompassHeading + 360) % 360;
     if (compassNeedle) compassNeedle.style.transform = `rotate(${relativeAngle.toFixed(1)}deg)`;
@@ -231,6 +235,7 @@ function updateQiblaDisplay() {
     }
   } else {
     // Static mode relative to North
+    if (compassMarks) compassMarks.style.transform = 'rotate(0deg)';
     if (compassDial) compassDial.classList.remove('aligned');
     if (alignmentBadge) alignmentBadge.style.display = 'none';
     if (qiblaTextEl) qiblaTextEl.textContent = `Qibla direction: ${bearingFormatted} from North (${place.name})`;
