@@ -91,7 +91,10 @@
     <!-- Hero Card: Next Prayer & Circular Countdown -->
     <div id="next-prayer-banner" class="next-prayer-banner">
       <div class="banner-top">
-        <span id="banner-label" class="banner-label">Next Prayer</span>
+        <div class="banner-label-group">
+          <span class="live-pulse-dot"></span>
+          <span id="banner-label" class="banner-label">Next Prayer</span>
+        </div>
         <span id="banner-prayer-at" class="banner-at">at --:--</span>
       </div>
       <div class="banner-body">
@@ -366,6 +369,24 @@
       </div>
     </div>
   </div>
+
+  <!-- Floating PWA Install Banner -->
+  <div id="pwa-install-banner" class="pwa-install-banner" style="display: none;">
+    <div class="pwa-banner-content">
+      <div class="pwa-icon-box">📱</div>
+      <div class="pwa-text-box">
+        <strong>Install App on Device</strong>
+        <span>Quick access & guaranteed prayer alerts</span>
+      </div>
+    </div>
+    <div class="pwa-banner-actions">
+      <button type="button" id="pwa-install-btn" class="btn-pwa-install">Install</button>
+      <button type="button" id="pwa-dismiss-btn" class="btn-pwa-dismiss" aria-label="Dismiss">&times;</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
   <script src="app.js"></script>
 </body>

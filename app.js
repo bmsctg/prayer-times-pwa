@@ -41,6 +41,13 @@ let notifiedKeys = {};
 let isAudioEnabled = localStorage.getItem('prayer-audio') !== 'off';
 
 const PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+const PRAYER_ICONS = {
+  Fajr: '🌅',
+  Dhuhr: '☀️',
+  Asr: '🌇',
+  Maghrib: '🌆',
+  Isha: '🌙'
+};
 const KAABA_LAT = 21.4225;
 const KAABA_LON = 39.8262;
 
@@ -422,8 +429,9 @@ async function loadPrayerTimes() {
   PRAYERS.forEach((prayer, i) => {
     const li = document.createElement('li');
     if (i === nextIdx) li.classList.add('active');
+    const icon = PRAYER_ICONS[prayer] || '🕌';
     li.innerHTML = `
-      <span class="prayer-name">${prayer}</span>
+      <span class="prayer-name"><span class="prayer-icon">${icon}</span> ${prayer}</span>
       <span class="prayer-time">${timings[prayer]}</span>
     `;
     prayerList.appendChild(li);
@@ -965,6 +973,7 @@ async function download30DaySchedule() {
   if (statusEl) {
     statusEl.textContent = `✓ Downloaded 30-day prayer schedule PDF for ${place.name}!`;
   }
+  showToast(`Downloaded 30-day PDF schedule for ${place.name}!`, 'success');
 
   if (pdfBtn) pdfBtn.style.opacity = '1';
 }
@@ -1033,6 +1042,7 @@ function triggerTestNotification() {
       });
     }
     notifyStatus.textContent = '✓ Test notification fired successfully!';
+    showToast('Test notification fired successfully!', 'info');
   } else {
     notifyCheck.checked = true;
     handleNotifyToggle();
@@ -1068,9 +1078,10 @@ function handleGpsLocation() {
     placeSelect.value = nearestKey;
     loadPrayerTimes();
     updateQiblaDisplay();
+    showToast(`Detected location: ${PLACES[nearestKey].name}`, 'success');
   }, () => {
     gpsBtn.style.opacity = '1';
-    alert('Unable to retrieve your location');
+    showToast('Unable to retrieve location', 'error');
   });
 }
 
@@ -1084,6 +1095,7 @@ function initThemeAndAudio() {
     const next = current === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
     localStorage.setItem('prayer-theme', next);
+    showToast(`Theme switched to ${next} mode`, 'info', 2000);
   });
 
   function updateAudioIcons() {
@@ -1193,6 +1205,79 @@ function init() {
 
   // Help Modal Setup
   setupHelpModal();
+  setupPwaInstallBanner();
+}
+
+// Floating Toast Notification System
+function showToast(message, type = 'info', duration = 3500) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const icons = {
+    success: '✓',
+    warning: '⚠️',
+    error: '✕',
+    info: 'ℹ️'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast--${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+    <span class="toast-msg">${message}</span>
+    <button type="button" class="toast-close" aria-label="Close">&times;</button>
+  `;
+
+  const removeToast = () => {
+    toast.classList.add('toast--hiding');
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 250);
+  };
+
+  toast.querySelector('.toast-close').addEventListener('click', removeToast);
+  container.appendChild(toast);
+
+  setTimeout(removeToast, duration);
+}
+
+// PWA Deferred Install Prompt Manager
+let deferredInstallPrompt = null;
+
+function setupPwaInstallBanner() {
+  const banner = document.getElementById('pwa-install-banner');
+  const installBtn = document.getElementById('pwa-install-btn');
+  const dismissBtn = document.getElementById('pwa-dismiss-btn');
+  if (!banner || !installBtn) return;
+
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  const isDismissed = localStorage.getItem('pwa-banner-dismissed') === 'true';
+
+  if (isStandalone || isDismissed) return;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    banner.style.display = 'flex';
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    banner.style.display = 'none';
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+      showToast('App installed successfully!', 'success');
+    }
+    deferredInstallPrompt = null;
+  });
+
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+      banner.style.display = 'none';
+      localStorage.setItem('pwa-banner-dismissed', 'true');
+    });
+  }
 }
 
 function setupHelpModal() {
