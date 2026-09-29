@@ -1,5 +1,5 @@
 // Service Worker for Prayer Times
-const CACHE_NAME = 'prayer-times-v7';
+const CACHE_NAME = 'prayer-times-v8';
 const ASSETS = [
   './',
   './index.html',

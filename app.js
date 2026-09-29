@@ -50,10 +50,8 @@ const PRAYER_ICONS = {
 };
 const DISPLAY_ITEMS = [
   { key: 'Fajr', name: 'Fajr', icon: '🌅', isPrayer: true },
-  { key: 'Sunrise', name: 'Sunrise', icon: '☀️', isPrayer: false, label: 'Soluppgång' },
   { key: 'Dhuhr', name: 'Dhuhr', icon: '☀️', isPrayer: true },
   { key: 'Asr', name: 'Asr', icon: '🌇', isPrayer: true },
-  { key: 'Sunset', name: 'Sunset', icon: '🌆', isPrayer: false, label: 'Solnedgång' },
   { key: 'Maghrib', name: 'Maghrib', icon: '🌆', isPrayer: true },
   { key: 'Isha', name: 'Isha', icon: '🌙', isPrayer: true }
 ];
