@@ -48,6 +48,15 @@ const PRAYER_ICONS = {
   Maghrib: '🌆',
   Isha: '🌙'
 };
+const DISPLAY_ITEMS = [
+  { key: 'Fajr', name: 'Fajr', icon: '🌅', isPrayer: true },
+  { key: 'Sunrise', name: 'Sunrise', icon: '☀️', isPrayer: false, label: 'Soluppgång' },
+  { key: 'Dhuhr', name: 'Dhuhr', icon: '☀️', isPrayer: true },
+  { key: 'Asr', name: 'Asr', icon: '🌇', isPrayer: true },
+  { key: 'Sunset', name: 'Sunset', icon: '🌆', isPrayer: false, label: 'Solnedgång' },
+  { key: 'Maghrib', name: 'Maghrib', icon: '🌆', isPrayer: true },
+  { key: 'Isha', name: 'Isha', icon: '🌙', isPrayer: true }
+];
 const KAABA_LAT = 21.4225;
 const KAABA_LON = 39.8262;
 
@@ -431,17 +440,38 @@ async function loadPrayerTimes() {
     }
   }
 
+  const sunriseTime = timings.Sunrise || '--:--';
+  const sunsetTime = timings.Sunset || timings.Maghrib || '--:--';
+
+  const headerSunrise = document.getElementById('header-sunrise-time');
+  const headerSunset = document.getElementById('header-sunset-time');
+  if (headerSunrise) headerSunrise.textContent = sunriseTime;
+  if (headerSunset) headerSunset.textContent = sunsetTime;
+
   const nextIdx = getNextPrayerIndex(timings);
 
   prayerList.innerHTML = '';
-  PRAYERS.forEach((prayer, i) => {
+  DISPLAY_ITEMS.forEach(item => {
     const li = document.createElement('li');
-    if (i === nextIdx) li.classList.add('active');
-    const icon = PRAYER_ICONS[prayer] || '🕌';
-    li.innerHTML = `
-      <span class="prayer-name"><span class="prayer-icon">${icon}</span> ${prayer}</span>
-      <span class="prayer-time">${timings[prayer]}</span>
-    `;
+    if (item.isPrayer) {
+      const pIdx = PRAYERS.indexOf(item.key);
+      if (pIdx === nextIdx) li.classList.add('active');
+      const icon = PRAYER_ICONS[item.key] || '🕌';
+      li.innerHTML = `
+        <span class="prayer-name"><span class="prayer-icon">${icon}</span> ${item.name}</span>
+        <span class="prayer-time">${timings[item.key] || '--:--'}</span>
+      `;
+    } else {
+      li.classList.add('prayer-item--sun');
+      const timeVal = item.key === 'Sunrise' ? sunriseTime : sunsetTime;
+      li.innerHTML = `
+        <span class="prayer-name">
+          <span class="prayer-icon">${item.icon}</span> ${item.name}
+          <span class="sun-badge">${item.label}</span>
+        </span>
+        <span class="prayer-time">${timeVal}</span>
+      `;
+    }
     prayerList.appendChild(li);
   });
 
@@ -876,12 +906,14 @@ async function download30DaySchedule() {
     const dateStr = toIfisDate(targetDate);
     const dayName = targetDate.toLocaleDateString('en-US', { weekday: 'short' });
     const fajr = timings.Fajr || '--:--';
+    const sunrise = timings.Sunrise || '--:--';
     const dhuhr = timings.Dhuhr || '--:--';
     const asr = timings.Asr || '--:--';
+    const sunset = timings.Sunset || timings.Maghrib || '--:--';
     const maghrib = timings.Maghrib || '--:--';
     const isha = timings.Isha || '--:--';
 
-    rows.push({ date: dateStr, day: dayName, fajr, dhuhr, asr, maghrib, isha });
+    rows.push({ date: dateStr, day: dayName, fajr, sunrise, dhuhr, asr, sunset, maghrib, isha });
   }
 
   const startDateStr = rows.length > 0 ? rows[0].date : toIfisDate(today);
@@ -929,8 +961,8 @@ async function download30DaySchedule() {
   doc.text(generatedDateStr, 138, 34.5);
 
   // Timetable AutoTable (Single Page Compact Layout)
-  const head = [['Date', 'Day', 'Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']];
-  const body = rows.map(r => [r.date, r.day, r.fajr, r.dhuhr, r.asr, r.maghrib, r.isha]);
+  const head = [['Date', 'Day', 'Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Sunset', 'Maghrib', 'Isha']];
+  const body = rows.map(r => [r.date, r.day, r.fajr, r.sunrise, r.dhuhr, r.asr, r.sunset, r.maghrib, r.isha]);
 
   doc.autoTable({
     startY: 43,
@@ -942,28 +974,30 @@ async function download30DaySchedule() {
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       halign: 'center',
-      fontSize: 8.5,
-      cellPadding: 1.5
+      fontSize: 8,
+      cellPadding: 1.2
     },
     bodyStyles: {
-      fontSize: 7.5,
+      fontSize: 7,
       textColor: [30, 41, 59],
       halign: 'center',
-      cellPadding: 1.2
+      cellPadding: 1
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252]
     },
     columnStyles: {
-      0: { cellWidth: 30, fontStyle: 'bold' },
-      1: { cellWidth: 20 },
-      2: { cellWidth: 27 },
-      3: { cellWidth: 27 },
-      4: { cellWidth: 27 },
-      5: { cellWidth: 27 },
-      6: { cellWidth: 27 }
+      0: { cellWidth: 26, fontStyle: 'bold' },
+      1: { cellWidth: 16 },
+      2: { cellWidth: 20 },
+      3: { cellWidth: 24 },
+      4: { cellWidth: 20 },
+      5: { cellWidth: 20 },
+      6: { cellWidth: 24 },
+      7: { cellWidth: 20 },
+      8: { cellWidth: 20 }
     },
-    margin: { left: 12, right: 12 }
+    margin: { left: 10, right: 10 }
   });
 
   // Page Footer

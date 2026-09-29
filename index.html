@@ -58,6 +58,11 @@
       <div class="date-header">
         <p id="date-today" class="date-line">—</p>
         <p id="hijri-date" class="hijri-line">—</p>
+        <div class="header-sun-row">
+          <span class="sun-chip" title="Sunrise time">🌅 <span class="sun-chip-label">Sunrise:</span> <strong id="header-sunrise-time">--:--</strong></span>
+          <span class="sun-chip-divider">•</span>
+          <span class="sun-chip" title="Sunset time">🌇 <span class="sun-chip-label">Sunset:</span> <strong id="header-sunset-time">--:--</strong></span>
+        </div>
       </div>
     </header>
 
@@ -114,6 +119,45 @@
       <button type="button" id="prev-day-btn" class="nav-btn" disabled aria-label="Previous day">&#8249;</button>
       <button type="button" id="today-btn" class="nav-btn nav-btn--today" disabled>Today</button>
       <button type="button" id="next-day-btn" class="nav-btn" aria-label="Next day">&#8250;</button>
+    </div>
+
+    <!-- Graphical & Live Magnetometer Qibla Compass Card (2nd Section) -->
+    <div class="qibla-card glass-card">
+      <div class="qibla-header">
+        <span class="qibla-title">Live Qibla Compass</span>
+        <span id="qibla-degrees" class="qibla-degrees">137.5° SE</span>
+      </div>
+
+      <div class="compass-wrapper">
+        <div id="compass-dial" class="compass-dial">
+          <div id="compass-marks" class="compass-marks">
+            <div class="compass-mark north">N</div>
+            <div class="compass-mark east">E</div>
+            <div class="compass-mark south">S</div>
+            <div class="compass-mark west">W</div>
+          </div>
+          <div id="compass-needle" class="compass-needle" style="transform: rotate(137.5deg)">
+            <div class="kaaba-icon-pin" title="Kaaba direction">🕋</div>
+            <div class="needle-arrow"></div>
+          </div>
+          <div id="alignment-badge" class="alignment-badge" style="display:none">
+            <span>✨ ALIGNED ✨</span>
+          </div>
+        </div>
+      </div>
+
+      <p id="qibla-text" class="qibla-text">Direction towards Mecca (137.5° from North)</p>
+      <p id="compass-sensor-status" class="compass-sensor-status">Tap button below to turn your phone into a live compass</p>
+
+      <div class="qibla-actions">
+        <button type="button" id="compass-sensor-btn" class="qibla-btn qibla-btn--live">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+          </svg>
+          <span id="sensor-btn-text">Enable Live Device Compass</span>
+        </button>
+        <a href="https://qiblafinder.withgoogle.com/" target="_blank" rel="noopener" class="qibla-link-secondary">Google AR Backup</a>
+      </div>
     </div>
 
     <!-- Notification Service Card -->
@@ -209,45 +253,6 @@
         </button>
       </div>
       <p id="download-status" class="download-status"></p>
-    </div>
-
-    <!-- Graphical & Live Magnetometer Qibla Compass Card -->
-    <div class="qibla-card glass-card">
-      <div class="qibla-header">
-        <span class="qibla-title">Live Qibla Compass</span>
-        <span id="qibla-degrees" class="qibla-degrees">137.5° SE</span>
-      </div>
-
-      <div class="compass-wrapper">
-        <div id="compass-dial" class="compass-dial">
-          <div id="compass-marks" class="compass-marks">
-            <div class="compass-mark north">N</div>
-            <div class="compass-mark east">E</div>
-            <div class="compass-mark south">S</div>
-            <div class="compass-mark west">W</div>
-          </div>
-          <div id="compass-needle" class="compass-needle" style="transform: rotate(137.5deg)">
-            <div class="kaaba-icon-pin" title="Kaaba direction">🕋</div>
-            <div class="needle-arrow"></div>
-          </div>
-          <div id="alignment-badge" class="alignment-badge" style="display:none">
-            <span>✨ ALIGNED ✨</span>
-          </div>
-        </div>
-      </div>
-
-      <p id="qibla-text" class="qibla-text">Direction towards Mecca (137.5° from North)</p>
-      <p id="compass-sensor-status" class="compass-sensor-status">Tap button below to turn your phone into a live compass</p>
-
-      <div class="qibla-actions">
-        <button type="button" id="compass-sensor-btn" class="qibla-btn qibla-btn--live">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-          </svg>
-          <span id="sensor-btn-text">Enable Live Device Compass</span>
-        </button>
-        <a href="https://qiblafinder.withgoogle.com/" target="_blank" rel="noopener" class="qibla-link-secondary">Google AR Backup</a>
-      </div>
     </div>
 
     <!-- Footer -->
