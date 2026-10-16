@@ -400,6 +400,82 @@ async function loadHijriDate() {
   }
 }
 
+function getCurrentPrayerIndex(timings) {
+  if (dayOffset !== 0 || !timings) return -1;
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+
+  const toMins = (timeStr) => {
+    if (!timeStr) return null;
+    const match = String(timeStr).match(/^(\d{1,2}):(\d{2})/);
+    if (!match) return null;
+    return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+  };
+
+  const fajrMins = toMins(timings.Fajr);
+  const sunriseMins = toMins(timings.Sunrise);
+  const dhuhrMins = toMins(timings.Dhuhr);
+  const asrMins = toMins(timings.Asr);
+  const maghribMins = toMins(timings.Maghrib);
+  const ishaMins = toMins(timings.Isha);
+
+  // Fajr: Active from Fajr until Sunrise (or Dhuhr if Sunrise unavailable)
+  if (fajrMins !== null && nowMins >= fajrMins) {
+    const fajrEnd = sunriseMins !== null ? sunriseMins : dhuhrMins;
+    if (fajrEnd === null || nowMins < fajrEnd) {
+      return PRAYERS.indexOf('Fajr');
+    }
+  }
+
+  // Dhuhr: Active from Dhuhr until Asr
+  if (dhuhrMins !== null && nowMins >= dhuhrMins) {
+    if (asrMins === null || nowMins < asrMins) {
+      return PRAYERS.indexOf('Dhuhr');
+    }
+  }
+
+  // Asr: Active from Asr until Maghrib
+  if (asrMins !== null && nowMins >= asrMins) {
+    if (maghribMins === null || nowMins < maghribMins) {
+      return PRAYERS.indexOf('Asr');
+    }
+  }
+
+  // Maghrib: Active from Maghrib until Isha
+  if (maghribMins !== null && nowMins >= maghribMins) {
+    if (ishaMins === null || nowMins < ishaMins) {
+      return PRAYERS.indexOf('Maghrib');
+    }
+  }
+
+  // Isha: Active from Isha until midnight (23:59)
+  if (ishaMins !== null && nowMins >= ishaMins) {
+    return PRAYERS.indexOf('Isha');
+  }
+
+  // Between Sunrise and Dhuhr, or past midnight before Fajr: no prayer active
+  return -1;
+}
+
+let lastActiveIdx = null;
+
+function updateActivePrayerHighlight(timings) {
+  if (dayOffset !== 0 || !timings) return;
+  const currentIdx = getCurrentPrayerIndex(timings);
+  if (currentIdx === lastActiveIdx) return;
+  lastActiveIdx = currentIdx;
+
+  const activePrayerName = currentIdx >= 0 ? PRAYERS[currentIdx] : null;
+  const prayerLis = prayerList.querySelectorAll('li[data-prayer]');
+  prayerLis.forEach(li => {
+    if (activePrayerName && li.dataset.prayer === activePrayerName) {
+      li.classList.add('active');
+    } else {
+      li.classList.remove('active');
+    }
+  });
+}
+
 function getNextPrayerIndex(timings) {
   if (dayOffset !== 0) return -1;
   const now = new Date();
@@ -446,14 +522,20 @@ async function loadPrayerTimes() {
   if (headerSunrise) headerSunrise.textContent = sunriseTime;
   if (headerSunset) headerSunset.textContent = sunsetTime;
 
-  const nextIdx = getNextPrayerIndex(timings);
+  if (dayOffset === 0) {
+    todayTimings = timings;
+  }
+
+  const currentIdx = getCurrentPrayerIndex(timings);
+  lastActiveIdx = currentIdx;
 
   prayerList.innerHTML = '';
   DISPLAY_ITEMS.forEach(item => {
     const li = document.createElement('li');
     if (item.isPrayer) {
+      li.dataset.prayer = item.key;
       const pIdx = PRAYERS.indexOf(item.key);
-      if (pIdx === nextIdx) li.classList.add('active');
+      if (pIdx === currentIdx) li.classList.add('active');
       const icon = PRAYER_ICONS[item.key] || '🕌';
       li.innerHTML = `
         <span class="prayer-name"><span class="prayer-icon">${icon}</span> ${item.name}</span>
@@ -569,12 +651,14 @@ async function startNextPrayerBanner(todayTimings) {
       const remaining = next.target - Date.now();
       if (remaining <= 0) {
         startNextPrayerBanner(todayTimings);
+        if (todayTimings) updateActivePrayerHighlight(todayTimings);
         return;
       }
       countdownEl.textContent = formatCountdown(remaining);
       const elapsed = totalDuration - remaining;
       const pct = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
       if (progressBar) progressBar.style.width = `${pct}%`;
+      if (todayTimings) updateActivePrayerHighlight(todayTimings);
     }
 
     updateProgress();
