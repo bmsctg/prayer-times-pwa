@@ -349,21 +349,54 @@ function playWebAudioChime() {
 
 // API Data Fetching
 async function fetchIfis(place, dateStr) {
-  if (!ifisCache) {
+  async function loadFreshData() {
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const res = await fetch(`ifis-data.json?v=${today}`);
+      let res = await fetch(`ifis-data.json?v=${today}`);
+      if (!res.ok) {
+        res = await fetch('ifis-data.json');
+      }
       if (res.ok) {
         const data = await res.json();
         const hasData = Object.values(data).some(c => Object.keys(c).length > 0);
-        if (hasData) ifisCache = data;
+        if (hasData) {
+          ifisCache = data;
+          try {
+            localStorage.setItem('ifis-data-cache', JSON.stringify(data));
+          } catch (_) {}
+          return true;
+        }
       }
-    } catch (_) {
-      return null;
+    } catch (_) {}
+    return false;
+  }
+
+  // 1. Restore from localStorage if memory cache is empty
+  if (!ifisCache) {
+    try {
+      const stored = localStorage.getItem('ifis-data-cache');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object') {
+          const hasData = Object.values(parsed).some(c => Object.keys(c).length > 0);
+          if (hasData) ifisCache = parsed;
+        }
+      }
+    } catch (_) {}
+
+    // Fetch fresh data if needed
+    await loadFreshData();
+  }
+
+  // 2. If the requested date is missing from cache, attempt a fresh network refresh
+  let cityData = ifisCache ? ifisCache[place.ifisCity] : null;
+  if (!cityData || !cityData[dateStr]) {
+    const refreshed = await loadFreshData();
+    if (refreshed) {
+      cityData = ifisCache ? ifisCache[place.ifisCity] : null;
     }
   }
-  if (!ifisCache) return null;
-  const cityData = ifisCache[place.ifisCity];
+
   if (!cityData) return null;
   return cityData[dateStr] || null;
 }

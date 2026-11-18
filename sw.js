@@ -1,5 +1,5 @@
 // Service Worker for Prayer Times
-const CACHE_NAME = 'prayer-times-v8';
+const CACHE_NAME = 'prayer-times-v9';
 const ASSETS = [
   './',
   './index.html',
@@ -42,7 +42,7 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
+    caches.match(event.request, { ignoreSearch: true }).then(cachedResponse => {
       const fetchPromise = fetch(event.request).then(networkResponse => {
         // Update cache if valid response
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
