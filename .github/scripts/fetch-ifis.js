@@ -27,8 +27,8 @@ async function run() {
 
     console.log('Navigating to IFIS (passing bot check)...');
     await page.goto('https://www.islamiskaforbundet.se/bonetider/', {
-      waitUntil: 'networkidle0',
-      timeout: 30000,
+      waitUntil: 'domcontentloaded',
+      timeout: 60000,
     });
     console.log('Page title:', await page.title());
 
